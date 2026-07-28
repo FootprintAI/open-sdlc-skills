@@ -1,13 +1,17 @@
 ---
-name: "Sprint Master: Sprint Cycle"
-description: Act as the sprint master — drive a complete sprint cycle end to end by chaining four roles and enforcing the hand-off between them. A project manager scopes the sprint first (umbrella issue + prioritized, flow-first child issues, per the /pm:sprint-delivery contract), engineers automatically implement every scoped issue (each routed to a Claude model tier — model:sonnet / model:opus / model:fable label + rationale — implemented one worktree per issue under that model via the /engineer:implement contract), DevOps releases the cycle's merged work to the dev environment via the /devops:deploy contract, and once the PM closes the cycle a release manager cuts the release — tag on the codebase and GitHub, release notes, and the release image build workflow triggered — via the /release:cut contract. Pair with /loop for a self-running cycle.
+name: "Team: Sprint Cycle"
+description: Drive a complete sprint cycle end to end by chaining four roles and enforcing the hand-off between them. A project manager scopes the sprint first (umbrella issue + prioritized, flow-first child issues, per the /pm:sprint-delivery contract), engineers automatically implement every scoped issue (each routed to a Claude model tier — model:sonnet / model:opus / model:fable label + rationale — implemented one worktree per issue under that model via the /engineer:implement contract), DevOps releases the cycle's merged work to the dev environment via the /devops:deploy contract, and once the PM closes the cycle a release manager cuts the release — tag on the codebase and GitHub, release notes, and the release image build workflow triggered — via the /release:cut contract. Pair with /loop for a self-running cycle.
 category: Team
-tags: [sprint-master, scrum, team, sprint, pm, engineer, devops, release, umbrella-issue, model-routing, worktree, deploy, tag, loop]
+tags: [team, sprint, pm, engineer, devops, release, umbrella-issue, model-routing, worktree, deploy, tag, loop]
 ---
 
-Act as the **sprint master**: you do not own scope (the PM does) or code
-(the engineers do) — you own that the cycle *moves*, that each hand-off
-actually happens, and that nothing sits silently blocked.
+Act as the **cycle orchestrator**: you do not own scope (the PM stage does)
+or code (the engineer stage does) — you own that the cycle *moves* and that
+each hand-off actually happens.
+
+This skill *runs* a cycle. To diagnose one that has stopped moving — stalled
+claims, starved reviews, WIP sprawl — use `/scrum:master`, which watches the
+board and routes impediments without touching the work.
 
 Run a **complete sprint cycle** as four chained roles with a hard hand-off
 between each:

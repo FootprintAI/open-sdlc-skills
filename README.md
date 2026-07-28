@@ -1,7 +1,7 @@
 # open-sdlc-skills
 
 A software team as [Claude Code agent skills](https://docs.claude.com/en/docs/claude-code)
-— Product Manager, Software Architect, Project Manager, Sprint Master,
+— Product Manager, Software Architect, Project Manager, Scrum Master,
 Software Engineer, QA Tester, Code Reviewer, DevOps, and Release Manager.
 
 Each skill is one role with its own principles, deliverables, and
@@ -28,7 +28,8 @@ of them.
 | **Product Manager** | [`/product:define`](product/define.md) | Turns a raw idea or user problem into a PRD: problem with evidence, target user, success metrics, MVP scope, and P0 user stories with testable acceptance criteria. Ruthlessly cuts to the smallest thing worth shipping, then hands the stories off as GitHub issues. |
 | **Software Architect** | [`/architect:design`](architect/design.md) | Designs (or reviews) the technical solution. Opinionated stack — Docker, protobuf/gRPC + grpc-gateway, Next.js/React/Tailwind — across three sanctioned languages picked per component and justified in the doc: **Go** for services and CLIs, **Python** for ML/data (where the ecosystem *is* the reason), **TypeScript** for the browser and IO-bound backends. Test-driven design, with every boundary typed *and type-checked in CI* (`go vet` / `mypy --strict` / `tsc --noEmit`; Pydantic and zod parsing external input). Writes the design doc to `docs/architecture/`. |
 | **Project Manager** | [`/pm:sprint-delivery`](pm/sprint-delivery.md) | Plans and coordinates weekly sprints. Prioritizes "make the flow work first, optimize next phase"; coordinates everything on a GitHub umbrella issue with linked child issues and weekly progress updates. |
-| **Sprint Master** | [`/team:sprint-cycle`](team/sprint-cycle.md) | Drives a whole cycle end to end and enforces every hand-off: the PM stage scopes (umbrella + flow-first child issues), engineers implement each scoped issue in its own git worktree under a routed model tier (`model:*` label + rationale), DevOps releases merged work to dev, and once the cycle closes the release manager cuts the release. Escalates the model tier on stalls, never downgrades. Owns *momentum*, not scope. Pair with `/loop` for a self-running cycle. |
+| **Scrum Master** | [`/scrum:master`](scrum/master.md) | Facilitates a sprint that's already running. Rebuilds the board from *evidence* — commits, PRs, CI runs, claim timestamps — rather than status labels, then sorts it by how long each thing has been still. Names every impediment with a type, an owner, and an age (review starvation, stalled claim, broken CI, missing decision), enforces WIP limits, posts the standup on the umbrella issue, and runs the retro at cycle close. Owns *momentum* — never scope, code, or review verdicts. |
+| **Team (automated cycle)** | [`/team:sprint-cycle`](team/sprint-cycle.md) | Runs a whole cycle end to end and enforces every hand-off: the PM stage scopes (umbrella + flow-first child issues), engineers implement each scoped issue in its own git worktree under a routed model tier (`model:*` label + rationale), DevOps releases merged work to dev, and once the cycle closes the release manager cuts the release. Escalates the model tier on stalls, never downgrades. Pair with `/loop` for a self-running cycle. |
 | **Software Engineer** | [`/engineer:implement`](engineer/implement.md) | Claims the issue first — posts `${who}-${model} is starting processing it`, where `${who}` is the agent instance's own id, not the shared account it authenticates as, so parallel engineers stay distinguishable — then implements it test-first on the team stack, following the architecture design doc. Delivers a small, green, reviewable PR linked to its issue. No scope creep, no drive-by refactors. |
 | **QA Tester** | [`/qa:unit-test`](qa/unit-test.md) | The fast lane: isolated, deterministic unit tests in Go/Python/TypeScript that mock underlying dependencies **only where a real object won't do** — real object > fake > stub > mock, and always at a seam you own, never a third party's internals. Classifies every dependency with a reason, proves each test can actually fail before trusting it, and runs green under `-race`/shuffle. |
 | **QA Tester** | [`/qa:integration-test`](qa/integration-test.md) | The real-dependency lane: Postgres, Redis, Kafka, MinIO launched in throwaway containers via **Docker or rootless Podman** (Testcontainers or compose), pinned to the versions production runs. Random ports, readiness polling instead of sleeps, real migrations, per-test isolation, guaranteed teardown — and container logs as CI artifacts when it goes red. Its own CI lane, so the unit suite stays fast. |
@@ -55,6 +56,8 @@ evidence — and **cycles iterate**: when one closes,
       ↓
 /pm:sprint-delivery    when & who               → umbrella issue, flow-first sprint
       ↓
+/scrum:master          why isn't it moving?     → standup, impediments, WIP, retro
+      ↓ (runs daily alongside every stage below)
 /engineer:implement    build it                 → test-first PRs, one per issue
       ↓
 /qa:unit-test          pin the logic            → fast mocked lane, green under -race
@@ -72,8 +75,9 @@ evidence — and **cycles iterate**: when one closes,
 cycle closes → retro → next PRD (waterfall in the small, iterative in the large)
 ```
 
-`/team:sprint-cycle` (the Sprint Master) automates the
-PM → engineer → DevOps → release lane of that chain in one command.
+`/team:sprint-cycle` automates the PM → engineer → DevOps → release lane of
+that chain in one command. `/scrum:master` is its counterpart: the cycle
+skill makes work *happen*, the scrum master finds out why it *stopped*.
 
 The chain is deliberate: the PRD's MVP journey becomes the architect's core
 flow, the sprint's Phase 1, and finally QA's happy path — **one journey,
@@ -161,7 +165,15 @@ one), and drive one cycle:
 /coordinator:status cycle
 ```
 
-Or hand the middle of that to the Sprint Master:
+Run the scrum master alongside it, daily, for as long as the sprint is open:
+
+```
+/scrum:master                  # standup on the umbrella: what moved, what's stuck
+/scrum:master impediments      # just the blocked register, routed to owners
+/scrum:master retro            # at cycle close
+```
+
+Or hand the middle of the cycle to the automation:
 
 ```
 /team:sprint-cycle ship bulk-import MVP     # PM → engineers → dev deploy → release

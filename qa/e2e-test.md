@@ -25,12 +25,14 @@ CLI project.
 Unless the user supplied a base URL of an already-running instance, the app
 under test runs in a clean, disposable environment:
 
-1. **Default: a fresh, disposable box.** Use whatever the project already
-   has for throwaway environments — a container built from its compose file
-   or `Dockerfile`, a preview deployment, a cloud sandbox, or a local VM.
-   Create a *fresh* one, deploy the project into it, and point the browser
-   at the exposed port. A fresh box guarantees the run isn't polluted by
-   leftover state from earlier runs
+1. **Default: a fresh, disposable box.** Check what this environment can
+   actually provision before settling for the weakest option — in
+   preference order: a **connected container-platform MCP server or CLI**
+   that can create a box and expose a port on demand, a preview deployment,
+   a container built from the project's compose file or `Dockerfile`, then a
+   local VM. Create a *fresh* one, deploy the project into it, and point the
+   browser at the exposed port. A fresh box guarantees the run isn't
+   polluted by leftover state from earlier runs
 2. **If the box is not working, investigate — don't silently route around
    it.** Find out why (image pull failure, resource limits, network, host
    down) and report what you found; an environment that won't come up is

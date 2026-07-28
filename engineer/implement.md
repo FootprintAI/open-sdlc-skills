@@ -41,12 +41,14 @@ tracked). Optionally `--draft` to open the PR as a draft.
 Tests and validation run in a clean, disposable environment — not on the
 laptop the code was written on:
 
-1. **Default: a fresh, disposable box.** Use whatever the project already
-   has for throwaway environments — a container built from the repo's
-   `Dockerfile` or dev container, a CI job on the branch, a cloud sandbox,
-   or a local VM. Create a *fresh* one, sync the branch into it, and run
-   the build + test suite there. A clean box is what catches missing
-   dependencies, undeclared env vars, and "works-on-my-machine" assumptions
+1. **Default: a fresh, disposable box.** Check what this environment can
+   actually provision before settling for the weakest option — in
+   preference order: a **connected container-platform MCP server or CLI**
+   that can create a box on demand, a CI job on the branch, a container
+   built from the repo's `Dockerfile` or dev container, then a local VM.
+   Create a *fresh* one, sync the branch into it, and run the build + test
+   suite there. A clean box is what catches missing dependencies,
+   undeclared env vars, and "works-on-my-machine" assumptions
 2. **If the box is not working, investigate — don't silently route around
    it.** Find out why (image pull failure, resource limits, network, host
    down) and report what you found; a test environment that won't come up

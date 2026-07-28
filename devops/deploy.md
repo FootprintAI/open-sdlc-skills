@@ -65,6 +65,12 @@ calls it); `prod` is never a default.
    - **PaaS / container platform** (Fly, Render, Cloud Run, ECS, or a
      container host with its own CLI/MCP tooling) — use its native deploy
      command with the commit pinned
+   - **Containarium** — only if the project already uses it (a
+     `containarium` CLI on PATH or a connected `containarium-*` MCP
+     server). Then: `list_backends` to confirm the target is healthy,
+     `sync`/`push` the commit, `compose_enable` to run it, `expose_port`
+     for the route. Never install it to satisfy this step — if it isn't
+     already there, the project deploys some other way
 
    Confirm the target environment is reachable and healthy before pushing
    anything at it. For **prod**: stop and confirm with the user — the

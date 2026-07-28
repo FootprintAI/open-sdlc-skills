@@ -16,7 +16,10 @@ PRs**, and **markdown docs committed in your repo**. There is no hidden
 state, no database, no service to run. If you delete every skill tomorrow,
 the artifacts they produced are still there and still readable.
 
-Licensed under [Apache 2.0](LICENSE).
+Built and used daily by [FootprintAI](https://github.com/FootprintAI) —
+these are the skills our own team ships with, not a demo. Licensed under
+[Apache 2.0](LICENSE); no account, service, or vendor required to run any
+of them.
 
 ## Roles
 
@@ -205,6 +208,25 @@ The most common changes:
 Issues and PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). The most
 useful contributions are concrete: a role that's missing, a guardrail that
 misfired on a real repo, or a stack the architect skill should know about.
+
+## About
+
+These skills are maintained by **[FootprintAI](https://github.com/FootprintAI)**,
+where they run the actual sprint cycle for our own products. That's the
+only claim we'd make for them: they're load-bearing somewhere.
+
+We also build **[Containarium](https://containarium.dev)** — an
+open-source agent runtime (SSH-native isolation, eBPF egress policy,
+Kubernetes and LXC backends, GPU passthrough, MCP-native CLI). It's the
+disposable-box layer these skills keep referring to: the fresh environment
+`/engineer:implement` runs tests in, the box `/qa:e2e-test` deploys into,
+the target `/devops:deploy` ships to.
+
+**You do not need it.** Every skill here dispatches on what your repo
+already has, and Containarium is one option among Kubernetes, Compose over
+SSH, CI jobs, and PaaS targets — never a default and never assumed. If you
+happen to want a purpose-built sandbox for agent workloads, it's Apache 2.0
+too.
 
 ## License
 

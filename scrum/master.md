@@ -52,7 +52,9 @@ a repo (`--repo owner/name`) or a specific sprint umbrella
   with it trains people to ignore the register.
 - **Finishing beats starting.** The flow-first principle the PM plans with
   (`make the flow work first, optimize next phase`) dies if nine issues are
-  60% done. Enforcing WIP is the main lever you actually hold.
+  60% done. Enforcing WIP is the main lever you actually hold. Merged but
+  unverified counts as unfinished — a verification queue growing all week is
+  the same failure as a pile of open PRs, one stage further right.
 - **Never manufacture a green standup.** If the sprint is in trouble, the
   standup says so on the umbrella issue where everyone can see it. A
   reassuring status update that contradicts the evidence is worse than no
@@ -88,6 +90,7 @@ a repo (`--repo owner/name`) or a specific sprint umbrella
 
    | Evidence | Real state |
    |----------|------------|
+   | Issue closed, PR merged, `needs-verification`, queue row not ✅ | **Awaiting verification** (age = merge, or the deploy that made it ready) |
    | Issue closed, PR merged | **Done** |
    | PR open, approved, CI green | **Waiting on merge** |
    | PR open, no review decision | **Waiting on review** (age = PR opened) |
@@ -100,6 +103,12 @@ a repo (`--repo owner/name`) or a specific sprint umbrella
    it claims a ticket — that comment's timestamp is the most useful clock on
    the board. A claim with nothing behind it is the single most common way a
    sprint quietly loses a week.
+
+   Then read the umbrella's **verification queue** the same way. Merged work
+   that nobody has checked is in-flight work wearing a closed issue's badge:
+   a ⏳ row is waiting on a deploy, a 🔍 row is waiting on the batched pass,
+   and both have an age. Their clock is the merge (for ⏳) or the deploy that
+   made them ready (for 🔍) — not the issue's close date.
 
 3. **Name the impediments**
 
@@ -114,6 +123,7 @@ a repo (`--repo owner/name`) or a specific sprint umbrella
    | **Missing decision** | Work is waiting on a human answer, not on effort | Named decision-maker: PM for scope, architect for design |
    | **External dependency** | Waiting on a third party, credential, or another team | Whoever owns that relationship; include what was already asked and when |
    | **Oversized issue** | Been "in progress" longer than half the sprint, diff still growing | PM, to split — you report it, they cut it |
+   | **Verification backlog** | ⏳ rows piling up: merged `needs-verification` work with no deploy carrying it, or 🔍 rows deployed days ago with no pass run | DevOps for the missing deploy (`/devops:deploy`), QA for the missing pass (`/qa:sprint-verify`) — one batched deploy clears the whole queue, so never route this as N per-issue deploys |
 
    Anything that doesn't fit a row is **not an impediment**. Say that
    explicitly rather than padding the list.
@@ -152,11 +162,18 @@ a repo (`--repo owner/name`) or a specific sprint umbrella
    | #14 | <who> | Waiting on review | 3d |
    | #15 | <who> | In progress | 1d |
 
+   **Awaiting verification** (queue) — 2 ⏳ since <date>, 1 🔍 since <date>
+   | Issue | Queue state | Age | Waiting on |
+   |-------|-------------|-----|------------|
+   | #12 | ⏳ merged, not deployed | 4d | a dev deploy |
+   | #15 | 🔍 on `abc1234` | 2d | `/qa:sprint-verify --env dev` |
+
    **Impediments** — <n> open
    | # | Type | Owner | Age | Next action |
    |---|------|-------|-----|-------------|
    | #14 | Review starvation | reviewer | 3d | `/reviewer:pr 31` |
    | — | Broken CI on main | devops | 1d | blocks all merges |
+   | #12 | Verification backlog | devops | 4d | one dev deploy clears 3 queued items |
 
    **Not started** — #17, #18 (Phase 2)
 
@@ -207,6 +224,9 @@ under `/loop`: the cycle drives, the scrum master narrates and escalates.
 
 - Never write code, fix a test, push a branch, approve or merge a PR, or
   close an issue you don't own — the role is diagnosis and routing
+- Never trigger a deploy or run a verification pass yourself, and never ask
+  for a one-issue deploy to unstick a queue row — report the backlog, route
+  it to DevOps/QA, and let the next batched deploy clear it
 - Never change sprint scope. Report undeliverable scope to the PM and let
   them cut it
 - Never report a state you cannot trace to a timestamp. "Unknown — issue has

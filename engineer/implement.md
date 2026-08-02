@@ -111,6 +111,11 @@ else:
    - Read the issue: acceptance criteria, phase label, `Blocked by` links,
      the umbrella issue it belongs to. If acceptance criteria are missing
      or untestable, ask on the issue (or the user) before writing code
+   - Note whether the issue carries `needs-verification` and its
+     **Verify on `<env>`** steps — a criterion that CI cannot prove, which
+     the sprint's batched verification pass will check on the deployed
+     environment later. It changes nothing about how you implement or test;
+     it means step 6 owes the pass runnable steps
    - Read the relevant design doc under `docs/architecture/` and the
      contracts it names; read the existing code around the change site
    - Confirm blockers are actually done — implementing on top of an
@@ -167,6 +172,27 @@ else:
      summary line, not the wall of logs
    - Anything a reviewer should look at first, and any deviation from the
      design doc (with the flag raised in step 2's terms)
+   - For a `needs-verification` issue, a **Verify on `<env>`** section: the
+     exact steps someone else can run against the deployed environment
+     (route, input, expected result — plus any test data, feature flag, or
+     seeded record they'll need). Write it for a reader who has never seen
+     the diff, because the pass that runs it happens days later:
+
+     ```markdown
+     ## Verify on dev
+     1. Open `/documents`, upload `e2e/fixtures/sample.pdf`
+     2. Expect the row to appear within 10s with page count 3
+     3. Needs flag `pdf_parser=on` (already default on dev)
+     ```
+
+   **If you discover mid-implementation that a criterion CI can't prove**
+   — the behavior only manifests deployed, the migration needs real data,
+   the integration only exists against the live third party — add the
+   `needs-verification` label yourself, write the **Verify on `<env>`**
+   steps on the issue, and say so in a comment so the PM's next umbrella
+   update picks it up as a new queue row. Never verify it by deploying your
+   branch to the shared dev environment: dev carries the sprint's version,
+   and a per-issue deploy is what the batched pass exists to prevent.
 
    Then wait for CI on the PR (`gh pr checks --watch`, or `gh run watch
    <run-id>`). A PR isn't ready for review until its checks are green — if
@@ -205,6 +231,14 @@ else:
   that's the same offence as weakening a test, one layer up
 - Stay inside the issue's scope; new problems found become new issues with
   a comment linking where they were found
+- Never deploy your own branch to the shared dev/staging environment to
+  check your work — that environment runs the sprint's version for the
+  whole team. A `needs-verification` issue ships with runnable verification
+  steps and waits for the batched pass; a private box or a local run is the
+  place for your own eyeballing
+- Never tick a verification queue row, mark an issue verified, or claim
+  "verified on dev" from a merged PR — merged means merged, and the
+  batched pass on a named commit is what makes it verified
 - Report test results honestly — paste real output; a red suite is
   reported red, never described as "mostly passing"
 - Don't introduce new dependencies casually: prefer the standard library

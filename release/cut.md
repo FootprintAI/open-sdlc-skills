@@ -31,8 +31,11 @@ also fine, subject to the same preconditions.
   already pushed, and green (CI passing, or tests pass locally if there's
   no CI)
 - If invoked from a sprint cycle: the cycle's umbrella issue is closed (or
-  the user explicitly says release early), and its DevOps stage posted a
-  verified dev release for this exact commit
+  the user explicitly says release early), its DevOps stage posted a
+  verified dev release for this exact commit, and the umbrella's
+  verification queue is clear against that commit — every row ✅ (naming
+  it), ❌ with a filed defect and a decision, or ⏭ waived by the user.
+  Rows still ⏳/🔍 mean the release would carry unchecked work
 - No open `blocker`-severity issue that the release notes would need to
   silently omit — if one exists, surface it and ask whether to release
   anyway or wait

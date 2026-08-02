@@ -1,8 +1,8 @@
 ---
 name: "DevOps: Deploy"
-description: Deploy a service git-natively — commit locally, push, and converge the target environment to exactly that commit, then run and verify it there. Deploys only committed state, verifies health after every deploy, and treats prod as confirmation-gated. Works with whatever the project already uses (Docker Compose over SSH, Kubernetes, a PaaS, or a CI deploy job).
+description: Deploy a service git-natively — commit locally, push, and converge the target environment to exactly that commit, then run and verify it there. Deploys only committed state, verifies health after every deploy, and treats prod as confirmation-gated. Records the deployed commit on the sprint umbrella and opens the batched verification window for the issues that version now carries. Works with whatever the project already uses (Docker Compose over SSH, Kubernetes, a PaaS, or a CI deploy job).
 category: DevOps
-tags: [devops, deploy, git, docker, kubernetes, ssh, rollback, verification]
+tags: [devops, deploy, git, docker, kubernetes, ssh, rollback, verification, sprint]
 ---
 
 Act as the **DevOps role** deploying a service. The deployment model is
@@ -107,15 +107,60 @@ calls it); `prod` is never a default.
      `/qa:e2e-test` happy-path pass against the deployed URL — QA's
      screenshots against the live environment are the deploy's proof
 
+   This verifies the *deploy*. Verifying the *sprint's issues* is the
+   batched pass in step 7 — a different question, answered once per
+   deployed version.
+
 6. **Report and record**
 
    > "Deployed `<service>` @ `<commit-hash>` to `<env>`: deployed revision
    > matches the commit, service up, health check passing at `<url>`,
    > metrics normal. Rollback point: `<previous-commit>`."
 
-   For prod deploys, also comment on the sprint umbrella issue (or the
-   release issue) with the deployed commit and URL, so delivery state is
-   visible where the team coordinates.
+   Comment the deployed commit and URL on the sprint umbrella issue (or the
+   release issue) for **every** environment, not just prod — the umbrella is
+   where the team reads what version each rung is running, and step 7 needs
+   that record.
+
+7. **Open the verification window on the sprint umbrella**
+
+   A deploy is what makes the sprint's unverifiable-by-CI work verifiable.
+   Because the environment now runs one known version, everything waiting on
+   it gets checked together:
+
+   - Find the sprint umbrella's **Verification queue** (from
+     `/pm:sprint-delivery`). No umbrella or no queue → nothing to do; say so
+     and stop here
+   - Work out which queued issues are actually *in* this commit:
+
+     ```bash
+     git log --oneline <previously-deployed>..<deployed-commit>   # what shipped
+     git branch --contains <issue-merge-commit> --merged <deployed-commit>
+     ```
+
+     Queue items whose merge commit is contained → **🔍 ready to verify**.
+     Items merged after this commit stay **⏳ awaiting deploy** — they are
+     not on the environment, and claiming otherwise is how a "verified"
+     result ends up describing code that isn't running
+   - Post one comment on the umbrella opening the window:
+
+     ```markdown
+     ## Dev deploy — `abc1234` @ https://dev.example.com — <date>
+
+     Health verified <time>. Shipped since `9f8e7d6`: #12, #15, #18.
+
+     **Ready to verify (🔍):** #12, #15, #18
+     **Still awaiting deploy (⏳):** #23 (merged after this commit)
+
+     Next: `/qa:sprint-verify --env dev` — one pass, this commit, all three.
+     ```
+
+   - Then hand off to `/qa:sprint-verify`. Do not verify the queue's issues
+     yourself item by item, and do not redeploy while a pass is running — a
+     verification pass split across two versions proves nothing about either
+
+   For **prod** deploys, the same applies for queue items flagged `dev + prod`;
+   the prod pass covers only those.
 
 **Rollback**
 
@@ -142,5 +187,13 @@ rollback is never silent.
 - A failed verification means the deploy FAILED — report it red and roll
   back or fix forward deliberately; never leave prod in an unverified
   state at the end of a session
+- **One version per environment per pass** — never deploy a single issue's
+  branch to a shared environment so someone can check it, and never
+  redeploy while a `/qa:sprint-verify` pass is in flight. Shared
+  environments run one known commit; a request to "just push my fix to dev
+  for a minute" is answered with the next batched deploy
+- Every deploy records its commit and URL on the sprint umbrella, for every
+  rung — a deployed version nobody can name is a version nobody can verify
+  against
 - This skill deploys and verifies — it does not write application code
   (that's `/engineer:implement`) or decide what ships (that's the sprint)

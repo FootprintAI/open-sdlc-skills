@@ -19,7 +19,12 @@ authored — flag it for a human instead.
 1. **Does it do what the issue says?** Every acceptance criterion on the
    linked issue maps to visible behavior in the diff AND to a test that
    pins it. Unmet criteria or criteria without tests are requested changes,
-   not nitpicks
+   not nitpicks. A criterion the author says CI *can't* pin (deployed-only
+   behavior, a migration against real data, a live integration) is fine —
+   but then the issue must carry `needs-verification` and the PR must carry
+   runnable **Verify on `<env>`** steps for the sprint's batched pass. A
+   criterion with neither a test nor verification steps is unproven, and
+   that is blocking
 2. **Correctness** — bugs, broken edge behavior on the paths the PR
    touches, race conditions, error paths that swallow failures
 3. **Test integrity** — tests actually assert the behavior (not
@@ -88,6 +93,9 @@ at most, never as individual comments.
    **Verdict:** approve | request changes
    **Tests run locally:** <suite result — actual numbers>
    **Acceptance criteria:** N/M covered by tests (missing: <which>)
+   **Deferred to verification:** <criteria the batched pass will check on
+   dev, and whether the steps are runnable — or "none">
+   
 
    ### Blocking
    - `path/file.go:42` — <finding, and what would resolve it>
@@ -119,6 +127,12 @@ at most, never as individual comments.
 
 - Never approve without running the tests yourself — a review that trusts
   the PR body is a rubber stamp
+- Never accept "we'll check it on dev" as a substitute for a test that
+  could have been written; verification is for what CI genuinely cannot
+  prove, and the steps must be executable by someone who never saw the diff
+- Never deploy the branch to a shared environment to review it — the dev
+  environment carries the sprint's version, and the batched pass is where
+  deployed behavior gets checked
 - Never review your own PR (same session/author) — flag it for a human
 - Blocking findings must be concrete: file, line, what's wrong, what would
   resolve it. "This looks off" is not a finding

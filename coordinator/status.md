@@ -20,8 +20,8 @@ from the PRD** — waterfall in the small, iterative in the large.
 | 3 | Plan | `/pm:sprint-delivery` | Sprint umbrella issue open, P0 stories phased and assigned |
 | 4 | Build | `/engineer:implement` | Every Phase 1 child issue has a linked PR |
 | 5 | Review | `/reviewer:pr` | Every PR approved and merged; umbrella checkboxes ticked |
-| 6 | Deploy | `/devops:deploy` | Deployed commit recorded on the umbrella/release issue, health verified |
-| 7 | Prove | `/qa:e2e-test` | `e2e/E2E-REPORT.md` for the deployed flow, screenshots present, flows PASS |
+| 6 | Deploy | `/devops:deploy` | Deployed commit recorded on the umbrella/release issue, health verified, verification queue items in that commit flipped to 🔍 |
+| 7 | Prove | `/qa:sprint-verify` + `/qa:e2e-test` | One batched pass on the deployed commit: every verification-queue row ✅ (with that commit), ❌ with a filed defect, or ⏭ waived; `e2e/E2E-REPORT.md` with screenshots for the UI flows |
 | 8 | Ship | `/release:cut` | Semver tag on the codebase and GitHub at the same commit, GitHub Release published |
 | — | **Cycle close** | coordinator | Gates 1–8 all passed → close cycle, **re-trigger stage 1** for the next PRD |
 
@@ -50,7 +50,9 @@ kick off the next one).
 
    The stage is the **first gate that fails**, scanning 1→7. Claims don't
    count — a PRD with `Status: draft` fails gate 1 even if everyone
-   "agrees" on it; an e2e report with no screenshots fails gate 7.
+   "agrees" on it; an e2e report with no screenshots fails gate 7, and so
+   does a verification queue with rows still ⏳/🔍 or a ✅ row that doesn't
+   name the commit it was verified on.
 
 2. **Report the position (mode: status, the default)**
 
@@ -125,7 +127,11 @@ kick off the next one).
 - This role reads, reports, gates, and hands off — it does not write PRDs,
   code, or designs itself; it names which role/skill does
 - Cycle close requires ALL gates including e2e proof — "deployed" without
-  the e2e report is stage 6, not done
+  the verification pass and e2e report is stage 6, not done
+- Gate 7 is one batched pass against one deployed commit. Per-issue
+  verification against a shifting dev environment does not pass the gate,
+  however many issues get individually blessed — the evidence is a pass
+  that names a single commit
 - Status updates and stage transitions are posted on the GitHub umbrella
   issue — coordination that only happened in chat didn't happen
 - When re-triggering the PRD, carried-over and deferred items are proposed

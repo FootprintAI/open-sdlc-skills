@@ -8,8 +8,9 @@ Each skill is one role with its own principles, deliverables, and
 guardrails. Together they cover the whole software delivery lifecycle —
 from "someone has a problem" to a tagged, deployed, e2e-proven release —
 and the whole **software quality management** flow inside it: unit tests,
-integration tests, e2e proof, defect reporting, and code review, each with
-an explicit evidence gate.
+integration tests, batched verification against the deployed version, e2e
+proof, defect reporting, and code review, each with an explicit evidence
+gate.
 
 The roles coordinate the way a real team does: through **GitHub issues and
 PRs**, and **markdown docs committed in your repo**. There is no hidden
@@ -34,6 +35,7 @@ of them.
 | **QA Tester** | [`/qa:unit-test`](qa/unit-test.md) | The fast lane: isolated, deterministic unit tests in Go/Python/TypeScript that mock underlying dependencies **only where a real object won't do** — real object > fake > stub > mock, and always at a seam you own, never a third party's internals. Classifies every dependency with a reason, proves each test can actually fail before trusting it, and runs green under `-race`/shuffle. |
 | **QA Tester** | [`/qa:integration-test`](qa/integration-test.md) | The real-dependency lane: Postgres, Redis, Kafka, MinIO launched in throwaway containers via **Docker or rootless Podman** (Testcontainers or compose), pinned to the versions production runs. Random ports, readiness polling instead of sleeps, real migrations, per-test isolation, guaranteed teardown — and container logs as CI artifacts when it goes red. Its own CI lane, so the unit suite stays fast. |
 | **QA Tester** | [`/qa:e2e-test`](qa/e2e-test.md) | Happy-path e2e run of a web/UI project with **a screenshot at every step as proof of execution**. Requests sample data (PDF/image/etc.) up front, cleans up test data afterward via the app's own API or UI, and writes a flow-by-flow report to `e2e/E2E-REPORT.md`. |
+| **QA Tester** | [`/qa:sprint-verify`](qa/sprint-verify.md) | The sprint's **batched verification pass**: the issues CI can't prove done wait on the umbrella's verification queue and are all checked against **one deployed commit**, right after the sprint deploys — never one issue at a time, because a dev environment redeployed per issue is a dev environment nobody can name a version for. Every result is stamped with the commit it was verified on; failures go straight to `/qa:issue-report`. |
 | **QA Tester** | [`/qa:issue-report`](qa/issue-report.md) | Files every defect found as a GitHub issue — one issue per finding, created *before* any fix is discussed. UI findings are verified live in a browser first (fresh defect screenshot + console errors), every issue records the app version/commit it was seen on, dedupes against existing issues, and cross-links related issues in both directions. |
 | **Code Reviewer** | [`/reviewer:pr`](reviewer/pr.md) | Reviews a PR against the team contract: acceptance criteria covered by tests (verified by *running* them), no weakened tests, proto-as-source-of-truth, typed boundaries, scope matching the issue. Verdict posted on the PR page. |
 | **DevOps** | [`/devops:deploy`](devops/deploy.md) | Deploys git-natively: commit, push, converge the environment to exactly that commit, verify health on the real route. Platform-agnostic — uses whatever the repo already has (CI deploy job, Kubernetes, Compose over SSH, a PaaS). Dev before prod; prod is confirmation-gated with a backup. |
@@ -66,7 +68,8 @@ evidence — and **cycles iterate**: when one closes,
 /reviewer:pr           check it                 → verified review on the PR page
       ↓
 /devops:deploy         ship it                  → git-native deploy, health verified
-      ↓
+      ↓                                            (opens the verification window)
+/qa:sprint-verify      check the batch          → one pass, one commit, queue cleared
 /qa:e2e-test           prove it works           → screenshots + e2e report
 /qa:issue-report       file what broke          → one GitHub issue per defect
       ↓
@@ -85,7 +88,7 @@ verified at every stage**.
 
 ## Quality management, specifically
 
-Quality here is not a review stage bolted on at the end; it's four
+Quality here is not a review stage bolted on at the end; it's five
 independent evidence gates, each producing an artifact someone else can
 check:
 
@@ -95,9 +98,10 @@ check:
 | Boundaries are pinned | `/qa:integration-test` | A suite run against real Postgres/Redis/Kafka at production versions |
 | The contract is met | `/reviewer:pr` | A review that ran the tests, not one that read them |
 | The product works | `/qa:e2e-test` | A screenshot per step, in a report, against a deployed URL |
+| Deployed-only behavior is checked | `/qa:sprint-verify` | One batched pass per deployed commit, every result naming that commit |
 | Defects are tracked | `/qa:issue-report` | One GitHub issue per finding, deduped and cross-linked |
 
-The recurring rule across all five: **claims don't pass gates, artifacts
+The recurring rule across all six: **claims don't pass gates, artifacts
 do.** A skill that cannot produce the evidence reports the gate as *not
 passed* rather than asserting success.
 
@@ -152,7 +156,10 @@ one), and drive one cycle:
 # 7. Deploy the merged commit (dev first; prod asks for confirmation)
 /devops:deploy api to dev
 
-# 8. Prove it works (screenshots + e2e/E2E-REPORT.md; asks for sample data first)
+# 8. Verify the whole sprint at once, against the commit you just deployed
+/qa:sprint-verify --env dev
+
+# 8a. Prove it works (screenshots + e2e/E2E-REPORT.md; asks for sample data first)
 /qa:e2e-test
 
 # 8b. File everything QA found as linked GitHub issues (dedupes first)
@@ -176,7 +183,7 @@ Run the scrum master alongside it, daily, for as long as the sprint is open:
 Or hand the middle of the cycle to the automation:
 
 ```
-/team:sprint-cycle ship bulk-import MVP     # PM → engineers → dev deploy → release
+/team:sprint-cycle ship bulk-import MVP     # PM → engineers → dev deploy → verify → release
 /loop 15m /team:sprint-cycle                # ...and keep it running
 ```
 
@@ -195,6 +202,12 @@ Or hand the middle of the cycle to the automation:
 - **Prod is never automatic.** `/team:sprint-cycle` stops at dev. Ship to
   prod yourself with `/devops:deploy <service> to prod`, which names the
   exact commit and waits for your confirmation.
+- **Verification is batched, not per-issue.** Issues that need a running
+  environment are flagged at scoping time and wait on the umbrella's
+  verification queue; one deploy makes them all checkable, and
+  `/qa:sprint-verify` clears the queue against that single commit. It's
+  what keeps your dev environment on one known version instead of whatever
+  the last person needed to check.
 - **Skills propose before they act on anything hard to undo** — expect to
   be asked before issues are filed in bulk, scope is cut, or prod is
   touched.

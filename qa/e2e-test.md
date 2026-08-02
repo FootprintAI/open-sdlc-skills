@@ -15,6 +15,14 @@ or a base URL of an already-running instance (e.g.,
 `/qa:e2e-test http://localhost:3000`). If omitted, discover flows and launch the
 app yourself.
 
+**Called from a sprint verification pass**: when `/qa:sprint-verify` hands
+this skill a deployed URL and a set of flows, they are the sprint's UI
+verification items and they run as **one session against that one deployed
+commit** — not one run per issue. Record the commit in the report header
+alongside the URL, skip the "launch the app" step entirely (the environment
+is already the thing under test), and never redeploy or restart it. Its
+test-data cleanup rules (step 6) still apply to everything the run creates.
+
 **Applies to**: Web/UI projects only (SPA, SSR app, static site, dashboard,
 Electron renderer, etc.). If the project has no UI surface, stop and tell the
 user this skill does not apply — do not force a browser onto an API-only or
@@ -158,7 +166,8 @@ under test runs in a clean, disposable environment:
 
    **Date:** <today>
    **App:** <name> @ <url>
-   **Environment:** disposable box `<id>` | local VM/container (fallback: <why>) | user-provided URL
+   **Version under test:** `<commit>` (required when testing a deployed environment)
+   **Environment:** disposable box `<id>` | local VM/container (fallback: <why>) | user-provided URL | deployed `<env>`
    **Launch command:** `<command>`
    **Tool:** Playwright <version> (chromium)
    **Run artifacts:** e2e/screenshots/<run-id>/

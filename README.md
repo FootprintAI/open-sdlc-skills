@@ -114,15 +114,22 @@ Each skill is a single markdown file at `<namespace>/<name>.md`, invoked as
 git clone https://github.com/FootprintAI/open-sdlc-skills.git
 cd open-sdlc-skills
 for f in */*.md; do
+  case "$f" in _shared/*) continue;; esac
   ns=$(dirname "$f"); name=$(basename "$f" .md)
   mkdir -p ~/.claude/skills/"$ns-$name"
   cp "$f" ~/.claude/skills/"$ns-$name"/SKILL.md
 done
+# Shared reference files the skills read at runtime (not skills themselves)
+mkdir -p ~/.claude/skills/_shared
+cp _shared/*.md ~/.claude/skills/_shared/
 ```
 
 New Claude Code sessions pick the skills up automatically. To install only
 some roles, copy just the files you want — the skills reference each other
-by name but degrade gracefully when one isn't installed.
+by name but degrade gracefully when one isn't installed. Keep `_shared/`
+alongside them: it holds the GitHub ↔ GitLab tracker mapping
+(`_shared/tracker.md`) that tracker-agnostic skills resolve their `gh` /
+`glab` commands from.
 
 ## How to use — a worked cycle
 

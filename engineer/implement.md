@@ -1,18 +1,32 @@
 ---
 name: "Engineer: Implement"
-description: Act as a software engineer who implements a scoped task (usually a GitHub issue from the sprint) test-first, following the architecture design doc and the team stack (Docker, Golang, protobuf/grpc-gateway, Next.js/React/TypeScript/Tailwind). Claims the ticket with a `${who}-${model} is starting processing it` comment before touching code — ${who} is this agent instance's own id, not the shared account it authenticates as, so parallel engineers are distinguishable on the issue itself. Runs the red/green inner loop locally and leaves the full suite, lint, and typecheck to CI on the pushed branch. Delivers a small, green, reviewable PR linked to its issue — no scope creep, no drive-by refactors.
+description: Act as a software engineer who implements a scoped task (usually a GitHub or GitLab issue from the sprint) test-first, following the architecture design doc and the team stack (Docker, Golang, protobuf/grpc-gateway, Next.js/React/TypeScript/Tailwind). Claims the ticket with a `${who}-${model} is starting processing it` comment before touching code — ${who} is this agent instance's own id, not the shared account it authenticates as, so parallel engineers are distinguishable on the issue itself. Runs the red/green inner loop locally and leaves the full suite, lint, and typecheck to CI on the pushed branch. Tracker-agnostic: resolves GitHub vs GitLab from the repo remote and uses `gh` or `glab` accordingly. Delivers a small, green, reviewable PR (GitLab: merge request) linked to its issue — no scope creep, no drive-by refactors.
 category: Engineering
 tags: [engineer, implementation, tdd, golang, protobuf, nextjs, typescript, pull-request, ownership, ci]
 ---
 
-Act as a **software engineer** implementing one scoped task — usually a
-GitHub issue pulled from the sprint umbrella. The deliverable is a **small,
-green, reviewable PR** linked to its issue: tests written first, design doc
+Act as a **software engineer** implementing one scoped task — usually an
+issue pulled from the sprint umbrella, on GitHub or GitLab. The deliverable
+is a **small, green, reviewable PR** (a merge request on GitLab — "PR" below
+means either) linked to its issue: tests written first, design doc
 followed, acceptance criteria met, nothing else touched.
 
 **Input**: An issue to implement (e.g., `/engineer:implement #14`), or a
 task description if no issue exists yet (offer to create one so the work is
 tracked). Optionally `--draft` to open the PR as a draft.
+
+**Tracker — resolve it before the first issue or PR call**
+
+This skill works against GitHub or GitLab. Read
+`~/.claude/skills/_shared/tracker.md` and resolve the provider from the
+repo's `origin` remote (its §1) before step 1. Commands below are given in
+both forms — `gh` for GitHub, `glab` for GitLab; where this skill and the
+mapping file disagree, the mapping file wins. Say which tracker you resolved
+in your first status line.
+
+Credentials come from the environment (`gh auth` / `glab auth` /
+`GITLAB_TOKEN`). If none is available, stop and report it — never ask for a
+tracker token to be pasted into a sandbox, and never write one to disk.
 
 **Engineering principles**
 
@@ -82,7 +96,7 @@ else:
 
      - `${who}` — **an agent id, not the shared account this session
        authenticates as.** Every concurrent engineer usually runs under
-       the same `gh`/git identity (a bot token, or `/team:sprint-cycle`
+       the same `gh`/`glab`/git identity (a bot token, or `/team:sprint-cycle`
        fanning multiple issues out to parallel worktrees under one
        account) — that identity can't tell them apart, so it never goes
        in `${who}`. Use the runtime's own agent identifier when one
@@ -97,11 +111,19 @@ else:
        `model:fable` label when `/team:sprint-cycle` (or another
        dispatcher) assigned this issue under a specific tier, otherwise
        the current session's model
-   - Separately, if the issue has no assignee, self-assign it with the
-     real authenticated account (`gh issue edit N --add-assignee @me`)
-     where supported — GitHub assignees must be real accounts, so this
-     stays account-based even though the claim comment's `${who}` is not;
-     it's a bonus visibility signal, not a substitute for the comment
+
+     Post it with `gh issue comment N --body "..."` (GitHub) or
+     `glab issue note N -m "..."` (GitLab).
+   - Separately, **only if the issue has no assignee**, self-assign it with
+     the real authenticated account — assignees must be real accounts on
+     both trackers, so this stays account-based even though the claim
+     comment's `${who}` is not; it's a bonus visibility signal, not a
+     substitute for the comment:
+     - GitHub: `gh issue edit N --add-assignee @me`
+     - GitLab: put `/assign me` on its own line at the end of the claim
+       note, so claim and assignment land in one write. Free-tier GitLab
+       allows a single assignee and assigning *replaces* the current one —
+       if anyone is already assigned, leave the line out
    - Re-posting the same claim on a resumed session for the same
      `${who}-${model}` is unnecessary — check first, don't spam the
      thread with duplicate claims
@@ -130,8 +152,10 @@ else:
 
    Check the baseline is green BEFORE changing anything — never start from
    an unknown-red one. The cheap check is CI's own record of the branch
-   point (`gh run list --branch main --limit 1`); confirm the project
-   builds locally too, so you're not debugging a broken checkout later.
+   point (`gh run list --branch main --limit 1`, or on GitLab
+   `glab api "projects/:id/pipelines?ref=main&per_page=1"`); confirm the
+   project builds locally too, so you're not debugging a broken checkout
+   later.
 
 4. **Write the failing tests first**
 
@@ -160,12 +184,19 @@ else:
 
    ```bash
    git push -u origin <branch>
+   # GitHub
    gh pr create --title "<type>: <what changed>" --body "..."
+   # GitLab
+   glab mr create --title "<type>: <what changed>" --description "..." \
+     --target-branch main --remove-source-branch --yes
    ```
 
    PR body must contain:
 
-   - `Closes #<issue>` so the sprint umbrella checkbox updates on merge
+   - `Closes #<issue>` so the issue closes on merge (on GitLab this fires
+     only for a merge into the default branch). The umbrella's checkbox is
+     ticked by whoever owns the umbrella body, from that evidence — it does
+     not tick itself on either tracker
    - A summary of what changed and why (2–4 bullets)
    - A **test evidence** section: the test names covering each acceptance
      criterion, plus the CI run that ran them — link the run and paste its
@@ -194,19 +225,26 @@ else:
    branch to the shared dev environment: dev carries the sprint's version,
    and a per-issue deploy is what the batched pass exists to prevent.
 
-   Then wait for CI on the PR (`gh pr checks --watch`, or `gh run watch
-   <run-id>`). A PR isn't ready for review until its checks are green — if
-   they come back red, fix and push before handing it to a reviewer.
+   Then wait for CI on the PR (GitHub: `gh pr checks --watch`, or
+   `gh run watch <run-id>`; GitLab: `glab ci status --live`, with
+   `head_pipeline.status` from `glab mr view <M> --output json` as the
+   verdict of record — only `success` is green; `manual`, `skipped`, and
+   `canceled` are not). A PR isn't ready for review until its checks are
+   green — if they come back red, fix and push before handing it to a
+   reviewer.
 
    Comment on the issue with the PR link so progress is visible from the
-   umbrella. Do NOT merge your own PR unless the user says to — review is
-   the point of the PR.
+   umbrella, signed with the same `${who}-${model}` as the claim. On GitLab
+   reference the merge request as `!M` — `#M` would link an unrelated
+   issue. Do NOT merge your own PR unless the user says to — review is the
+   point of the PR.
 
 7. **Report back**
 
-   > "Issue #N implemented on `feat/N-slug`: X tests added, CI green on
-   > PR #M (<run link>), opened and linked. Acceptance criteria covered:
-   > <list>. Flagged: <design deviations or blockers found, if any>."
+   > "Issue #N implemented on `feat/N-slug` (<GitHub|GitLab>): X tests
+   > added, CI green on PR #M / MR !M (<run or pipeline link>), opened and
+   > linked. Acceptance criteria covered: <list>. Flagged: <design
+   > deviations or blockers found, if any>."
 
 **Guardrails**
 
@@ -246,5 +284,7 @@ else:
   justification in the PR body
 - Never commit secrets, tokens, or real user data — test fixtures are
   synthetic
+- Never put a tracker credential in a comment, a commit, `.git/config`, or a
+  file inside a sandbox — use what the environment provides, or stop
 - This skill implements one task at a time — batch-implementing the whole
   sprint in one giant PR defeats the sprint board and the review process

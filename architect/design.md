@@ -10,9 +10,9 @@ solution for a feature or system. Produce a concrete, opinionated design —
 component layout, interface contracts, data model, and test strategy — not a
 menu of options.
 
-**Input**: What to design (e.g., `/architect:design PDF ingestion service`),
+**Input**: What to design (e.g., `/architect-design PDF ingestion service`),
 or `review` to assess an existing codebase/PR against these principles
-(e.g., `/architect:design review`).
+(e.g., `/architect-design review`).
 
 **Architectural preferences (the defaults — deviate only with justification)**
 
@@ -81,7 +81,7 @@ or `review` to assess an existing codebase/PR against these principles
   - Table-driven tests in Go; `pytest` with `parametrize` in Python;
     Vitest/Jest plus testing-library for React and TS components;
     contract tests at API boundaries; happy-path e2e on the assembled flow
-    (pairs with `/qa:e2e-test`)
+    (pairs with `/qa-e2e-test`)
   - The type check is part of the test gate, not a lint nicety —
     `go vet`/`go build`, `mypy --strict`, and `tsc --noEmit` fail the
     build the same way a red test does
@@ -198,7 +198,7 @@ or `review` to assess an existing codebase/PR against these principles
    > (Go: X, Python: Y, TypeScript: Z), M typed contracts generated from
    > K protos, test strategy and CI type gate per component.
    > Deviations from default stack: <list or none>.
-   > Next: turn components into issues with `/pm:sprint-delivery` —
+   > Next: turn components into issues with `/pm-sprint-delivery` —
    > flow-critical components are Phase 1."
 
 **Guardrails**

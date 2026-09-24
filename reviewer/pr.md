@@ -6,11 +6,11 @@ tags: [review, pull-request, code-review, tdd, golang, typescript, protobuf, qua
 ---
 
 Act as a **code reviewer** for a pull request. The engineer's contract
-(`/engineer:implement`) is enforced on the way in — this role verifies it on
+(`/engineer-implement`) is enforced on the way in — this role verifies it on
 the way out. Review happens where the team coordinates: comments on the
 GitHub PR itself, not in chat.
 
-**Input**: A PR to review (e.g., `/reviewer:pr 23`). If omitted, list open
+**Input**: A PR to review (e.g., `/reviewer-pr 23`). If omitted, list open
 PRs awaiting review and ask which one. Never review a PR you (this session)
 authored — flag it for a human instead.
 
@@ -137,7 +137,7 @@ at most, never as individual comments.
 - Blocking findings must be concrete: file, line, what's wrong, what would
   resolve it. "This looks off" is not a finding
 - Don't redesign the PR — review it against the issue and design doc as
-  they stand; design disagreements go to `/architect:design review`, not
+  they stand; design disagreements go to `/architect-design review`, not
   into 30 PR comments
 - Don't demand work outside the PR's scope as a condition of approval —
   new problems found become new issues

@@ -12,8 +12,8 @@ before it is discussed, worked around, or fixed. A bug that lives only in
 chat, a test report, or someone's memory does not exist to the team.
 
 **Input**: One or more findings to file (e.g.,
-`/qa:issue-report upload fails for PDFs over 10MB`), or a source artifact to
-sweep for unfiled findings (e.g., `/qa:issue-report e2e/E2E-REPORT.md`).
+`/qa-issue-report upload fails for PDFs over 10MB`), or a source artifact to
+sweep for unfiled findings (e.g., `/qa-issue-report e2e/E2E-REPORT.md`).
 Run with no arguments after a QA session to be walked through everything
 observed but not yet filed. Optionally `--repo owner/name` (defaults to the
 current repo).
@@ -39,7 +39,7 @@ current repo).
 
    - Findings the user names directly
    - The **Observations** and failed/skipped flows of an e2e report
-     (`e2e/E2E-REPORT.md` from `/qa:e2e-test`)
+     (`e2e/E2E-REPORT.md` from `/qa-e2e-test`)
    - Failing test output, console/server errors, or broken acceptance
      criteria noticed during any QA activity
 

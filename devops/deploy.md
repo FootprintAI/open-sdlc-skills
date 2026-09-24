@@ -10,8 +10,8 @@ Act as the **DevOps role** deploying a service. The deployment model is
 **exactly the committed state** — no build artifacts drifting from source, no
 "works locally" ambiguity. What runs remotely is what git says.
 
-**Input**: What to deploy and where (e.g., `/devops:deploy api to dev`,
-`/devops:deploy frontend to prod`). Default environment is the lowest
+**Input**: What to deploy and where (e.g., `/devops-deploy api to dev`,
+`/devops-deploy frontend to prod`). Default environment is the lowest
 non-production rung (`dev` / `staging` / `demo` — whatever this project
 calls it); `prod` is never a default.
 
@@ -104,7 +104,7 @@ calls it); `prod` is never a default.
      returns what it should
    - Resource metrics sane (no memory spike, no restart count climbing)
    - For user-facing services: this is the moment for a quick
-     `/qa:e2e-test` happy-path pass against the deployed URL — QA's
+     `/qa-e2e-test` happy-path pass against the deployed URL — QA's
      screenshots against the live environment are the deploy's proof
 
    This verifies the *deploy*. Verifying the *sprint's issues* is the
@@ -129,7 +129,7 @@ calls it); `prod` is never a default.
    it gets checked together:
 
    - Find the sprint umbrella's **Verification queue** (from
-     `/pm:sprint-delivery`). No umbrella or no queue → nothing to do; say so
+     `/pm-sprint-delivery`). No umbrella or no queue → nothing to do; say so
      and stop here
    - Work out which queued issues are actually *in* this commit:
 
@@ -152,10 +152,10 @@ calls it); `prod` is never a default.
      **Ready to verify (🔍):** #12, #15, #18
      **Still awaiting deploy (⏳):** #23 (merged after this commit)
 
-     Next: `/qa:sprint-verify --env dev` — one pass, this commit, all three.
+     Next: `/qa-sprint-verify --env dev` — one pass, this commit, all three.
      ```
 
-   - Then hand off to `/qa:sprint-verify`. Do not verify the queue's issues
+   - Then hand off to `/qa-sprint-verify`. Do not verify the queue's issues
      yourself item by item, and do not redeploy while a pass is running — a
      verification pass split across two versions proves nothing about either
 
@@ -189,11 +189,11 @@ rollback is never silent.
   state at the end of a session
 - **One version per environment per pass** — never deploy a single issue's
   branch to a shared environment so someone can check it, and never
-  redeploy while a `/qa:sprint-verify` pass is in flight. Shared
+  redeploy while a `/qa-sprint-verify` pass is in flight. Shared
   environments run one known commit; a request to "just push my fix to dev
   for a minute" is answered with the next batched deploy
 - Every deploy records its commit and URL on the sprint umbrella, for every
   rung — a deployed version nobody can name is a version nobody can verify
   against
 - This skill deploys and verifies — it does not write application code
-  (that's `/engineer:implement`) or decide what ships (that's the sprint)
+  (that's `/engineer-implement`) or decide what ships (that's the sprint)

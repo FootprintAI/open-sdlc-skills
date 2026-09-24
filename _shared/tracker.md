@@ -153,11 +153,11 @@ Rules:
 
 Task-list checkboxes (`- [ ] #12`) render with the issue's state but do
 **not** tick themselves on close, on either tracker. Whoever owns the
-umbrella body (`/pm:sprint-delivery update`) ticks them from evidence.
+umbrella body (`/pm-sprint-delivery update`) ticks them from evidence.
 
 ## 6. Reading evidence — field names differ
 
-Skills that judge state from JSON (`/scrum-master`, `/coordinator:status`)
+Skills that judge state from JSON (`/scrum-master`, `/coordinator-status`)
 need these translations:
 
 | Meaning | GitHub (`--json`) | GitLab (API / `--output json`) |

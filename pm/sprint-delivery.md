@@ -24,9 +24,9 @@ issue means redeploying dev per issue, so dev is never running one known
 version and nobody can say what's on it. The umbrella carries the
 **verification queue** that makes this trackable.
 
-**Input**: A sprint goal (e.g., `/pm:sprint-delivery ship PDF upload flow`),
+**Input**: A sprint goal (e.g., `/pm-sprint-delivery ship PDF upload flow`),
 optionally with a repo (`--repo owner/name`, defaults to the current repo).
-Run it again on an existing sprint (`/pm:sprint-delivery update`) to post the
+Run it again on an existing sprint (`/pm-sprint-delivery update`) to post the
 weekly progress update instead of planning a new sprint.
 
 **Modes**
@@ -136,8 +136,8 @@ weekly progress update instead of planning a new sprint.
    ## Verification queue — batched, one deployed version at a time
 
    Issues CI can't prove done. They are **not** verified as they merge —
-   they wait here, and `/qa:sprint-verify` checks them all together against
-   the version `/devops:deploy` puts on the environment.
+   they wait here, and `/qa-sprint-verify` checks them all together against
+   the version `/devops-deploy` puts on the environment.
 
    **Deployed to dev:** _not yet_ — `<commit>` @ `<url>`, <date>
    **Deployed to prod:** _n/a_
@@ -172,7 +172,7 @@ weekly progress update instead of planning a new sprint.
    > Y Phase 2 tasks (optimize). Critical path: #a → #b → #c.
    > Verification queue: Z issues need a deployed environment (#12, #15,
    > #18) — batched into one pass after the sprint deploys.
-   > Run `/pm:sprint-delivery update` for the weekly progress update."
+   > Run `/pm-sprint-delivery update` for the weekly progress update."
 
 6. **Weekly update (mode: update)**
 
@@ -183,10 +183,10 @@ weekly progress update instead of planning a new sprint.
    - Tick completed checkboxes in the umbrella body
    - Refresh the verification queue from evidence:
      - a `needs-verification` issue whose PR merged → ⏳ awaiting deploy
-     - the newest `/devops:deploy` comment names a commit; any ⏳ item whose
+     - the newest `/devops-deploy` comment names a commit; any ⏳ item whose
        merge commit is contained in it → 🔍 ready to verify (an item merged
        *after* that commit stays ⏳ — it is not on the environment)
-     - `/qa:sprint-verify` results → ✅ with the commit / ❌ with the defect
+     - `/qa-sprint-verify` results → ✅ with the commit / ❌ with the defect
        number / ⚠️ with the reason
      - a newly-flagged issue (engineer added `needs-verification` mid-sprint)
        → new queue row, and say so in the comment: the queue grew
@@ -221,8 +221,8 @@ weekly progress update instead of planning a new sprint.
    - **Clear the verification queue first** — every row must be ✅ (with the
      commit it was verified on), ❌ with a filed defect, or ⏭ waived with the
      user's explicit say-so and a reason. Rows still ⏳ or 🔍 mean the sprint
-     shipped work nobody checked: run `/devops:deploy` then
-     `/qa:sprint-verify`, or carry those issues to the next sprint. Do not
+     shipped work nobody checked: run `/devops-deploy` then
+     `/qa-sprint-verify`, or carry those issues to the next sprint. Do not
      close over them
    - Post a closing summary comment: shipped vs. planned, the verification
      pass result (env, commit, ✅/❌/⚠️ counts), what carried over and why

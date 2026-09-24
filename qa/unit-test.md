@@ -17,13 +17,13 @@ The judgment this skill exists to apply is *which one*:
 > never the library you don't.**
 
 Every mock is a claim about how a dependency behaves, and claims drift from
-reality. That drift is exactly what `/qa:integration-test` catches with real
+reality. That drift is exactly what `/qa-integration-test` catches with real
 containers; this suite's job is speed, isolation, and precise failure
 localization.
 
 **Input**: Optionally a package, module, or file to cover (e.g.
-`/qa:unit-test internal/billing`, `/qa:unit-test src/parser.ts`,
-`/qa:unit-test review`). If omitted, find the highest-value untested logic
+`/qa-unit-test internal/billing`, `/qa-unit-test src/parser.ts`,
+`/qa-unit-test review`). If omitted, find the highest-value untested logic
 in the repo and start there.
 
 **Principles**
@@ -65,7 +65,7 @@ in the repo and start there.
    Identify the unit under test and its current coverage. Read the code
    before writing anything — its actual behavior, including the error
    paths, is the specification here (unless this is TDD for new code
-   under `/engineer:implement`, where the acceptance criteria are).
+   under `/engineer-implement`, where the acceptance criteria are).
 
    ```bash
    go test ./... -cover                     # Go
@@ -87,7 +87,7 @@ in the repo and start there.
    | `UserRepo` interface | in-memory fake | needs state across calls |
    | `PaymentGateway` | mock | asserting the charge call *is* the behavior |
    | `time.Now` | injected clock | determinism |
-   | Postgres itself | **not here** | real SQL → `/qa:integration-test` |
+   | Postgres itself | **not here** | real SQL → `/qa-integration-test` |
 
    If the answer for a dependency is "I'd have to spin up Postgres",
    that test belongs in the integration suite, not this one.
@@ -99,7 +99,7 @@ in the repo and start there.
    handler — are design findings, not test problems. Prefer the small
    seam (extract an interface, take a parameter, move IO to the edge)
    and note it in the PR. If the refactor is larger than the test,
-   stop and raise it via `/qa:issue-report` or `/architect:design
+   stop and raise it via `/qa-issue-report` or `/architect-design
    review` rather than building an elaborate mock scaffold to test
    around a design flaw.
 
@@ -151,7 +151,7 @@ in the repo and start there.
 
    The unit lane runs on every PR, in seconds to a couple of minutes,
    with the type check beside it (`go vet`, `mypy --strict`,
-   `tsc --noEmit` — per `/architect:design`). Integration tests run in
+   `tsc --noEmit` — per `/architect-design`). Integration tests run in
    a separate lane so this one stays fast: mark them (`testing.Short`,
    `@pytest.mark.integration`, a separate vitest project) and exclude
    them here.
@@ -165,7 +165,7 @@ in the repo and start there.
    > shapes or real defects, as issues>`."
 
    Any genuine defect the new tests uncover is a finding, not a test
-   bug — file it via `/qa:issue-report` before fixing anything.
+   bug — file it via `/qa-issue-report` before fixing anything.
 
 **Guardrails**
 
@@ -175,7 +175,7 @@ in the repo and start there.
   unless the call itself is the observable behavior
 - Never use `sleep`, real network calls, real cloud credentials, or a
   real database in this suite — those belong to
-  `/qa:integration-test`
+  `/qa-integration-test`
 - Never weaken, skip, or delete a failing test to make the suite green;
   a red test is a finding until proven otherwise. `@skip`/`t.Skip`
   needs a linked issue in the same commit
@@ -184,5 +184,5 @@ in the repo and start there.
 - Never patch without `autospec`/typed mocks; a mock that accepts any
   call signature will happily outlive the API it was pretending to be
 - Do not restructure production code beyond the small seam a test
-  needs — larger refactors go through `/engineer:implement` with the
+  needs — larger refactors go through `/engineer-implement` with the
   design's blessing

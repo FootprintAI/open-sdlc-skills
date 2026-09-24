@@ -10,12 +10,12 @@ web (or UI-related) project. Every tested step must be captured as a screenshot
 — screenshots are the proof that the test actually ran, not a nice-to-have.
 Edge cases are explicitly out of scope: success paths only.
 
-**Input**: Optionally specify flows to test (e.g., `/qa:e2e-test login,upload`)
+**Input**: Optionally specify flows to test (e.g., `/qa-e2e-test login,upload`)
 or a base URL of an already-running instance (e.g.,
-`/qa:e2e-test http://localhost:3000`). If omitted, discover flows and launch the
+`/qa-e2e-test http://localhost:3000`). If omitted, discover flows and launch the
 app yourself.
 
-**Called from a sprint verification pass**: when `/qa:sprint-verify` hands
+**Called from a sprint verification pass**: when `/qa-sprint-verify` hands
 this skill a deployed URL and a set of flows, they are the sprint's UI
 verification items and they run as **one session against that one deployed
 commit** — not one run per issue. Record the commit in the report header
@@ -219,7 +219,7 @@ under test runs in a clean, disposable environment:
      screenshots live, which flows (if any) were skipped waiting on sample
      data, and whether all test data was removed
    - If the run produced failed flows or observations, remind the user to
-     file them as GitHub issues with `/qa:issue-report e2e/E2E-REPORT.md` —
+     file them as GitHub issues with `/qa-issue-report e2e/E2E-REPORT.md` —
      a defect that lives only in the report isn't tracked
 
    > "E2E happy-path run complete: N/M flows passed. Report:

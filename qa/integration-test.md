@@ -9,7 +9,7 @@ Act as a QA engineer building the **integration-test suite**: the tests that
 run against *real* dependencies — a real Postgres, a real Redis, a real
 object store — launched in throwaway containers with **Docker or Podman**.
 
-Unit tests (`/qa:unit-test`) prove your logic is right given assumptions
+Unit tests (`/qa-unit-test`) prove your logic is right given assumptions
 about the outside world. This suite exists because those assumptions are
 where systems actually break:
 
@@ -18,8 +18,8 @@ where systems actually break:
 > on the production schema. A real container does.**
 
 **Input**: Optionally the scope or dependency (e.g.
-`/qa:integration-test repository layer`, `/qa:integration-test redis cache`,
-`/qa:integration-test review`). If omitted, cover the components whose
+`/qa-integration-test repository layer`, `/qa-integration-test redis cache`,
+`/qa-integration-test review`). If omitted, cover the components whose
 correctness depends on real dependency behavior — repositories, caches,
 queue consumers, migrations.
 
@@ -169,7 +169,7 @@ queue consumers, migrations.
 
    Defects this suite finds — a migration that only works on an empty
    DB, an error type that differs from what the mock returned — are
-   exactly what it was built for. File them via `/qa:issue-report`.
+   exactly what it was built for. File them via `/qa-issue-report`.
 
 **Guardrails**
 
@@ -193,4 +193,4 @@ queue consumers, migrations.
 - Do not migrate unit-testable business logic into this suite because
   it is easier to write here; the lane's speed is a shared asset
 - This skill writes and runs tests; it does not fix the defects it finds
-  (`/engineer:implement`) or deploy anything (`/devops:deploy`)
+  (`/engineer-implement`) or deploy anything (`/devops-deploy`)

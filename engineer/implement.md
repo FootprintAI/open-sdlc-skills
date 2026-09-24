@@ -11,7 +11,7 @@ is a **small, green, reviewable PR** (a merge request on GitLab — "PR" below
 means either) linked to its issue: tests written first, design doc
 followed, acceptance criteria met, nothing else touched.
 
-**Input**: An issue to implement (e.g., `/engineer:implement #14`), or a
+**Input**: An issue to implement (e.g., `/engineer-implement #14`), or a
 task description if no issue exists yet (offer to create one so the work is
 tracked). Optionally `--draft` to open the PR as a draft.
 
@@ -37,7 +37,7 @@ tracker token to be pasted into a sandbox, and never write one to disk.
 - **Follow the design, don't redesign** — read `docs/architecture/` for the
   relevant design doc and stay inside it. If reality contradicts the design
   (missing contract, wrong assumption), stop and flag it on the issue for
-  `/architect:design` to resolve — don't silently improvise a new
+  `/architect-design` to resolve — don't silently improvise a new
   architecture in a feature PR
 - **Team stack, strongly typed** — Go for backend, `.proto` as the contract
   source of truth (regenerate, never hand-edit generated code), TypeScript
@@ -96,7 +96,7 @@ else:
 
      - `${who}` — **an agent id, not the shared account this session
        authenticates as.** Every concurrent engineer usually runs under
-       the same `gh`/`glab`/git identity (a bot token, or `/team:sprint-cycle`
+       the same `gh`/`glab`/git identity (a bot token, or `/team-sprint-cycle`
        fanning multiple issues out to parallel worktrees under one
        account) — that identity can't tell them apart, so it never goes
        in `${who}`. Use the runtime's own agent identifier when one
@@ -108,7 +108,7 @@ else:
        whole thread traces back to one run
      - `${model}` — the Claude model tier actually doing the
        implementation: the routed `model:sonnet` / `model:opus` /
-       `model:fable` label when `/team:sprint-cycle` (or another
+       `model:fable` label when `/team-sprint-cycle` (or another
        dispatcher) assigned this issue under a specific tier, otherwise
        the current session's model
 

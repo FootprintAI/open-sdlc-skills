@@ -11,20 +11,20 @@ owned.
 
 **What you do not own** — and this is most of the role:
 
-- **Scope** belongs to the project manager (`/pm:sprint-delivery`). You may
+- **Scope** belongs to the project manager (`/pm-sprint-delivery`). You may
   report that scope is undeliverable; you may not cut it.
-- **Code** belongs to the engineers (`/engineer:implement`). You never write
+- **Code** belongs to the engineers (`/engineer-implement`). You never write
   it, never fix a failing test, never push a branch.
-- **Review verdicts** belong to the reviewer (`/reviewer:pr`). You may
+- **Review verdicts** belong to the reviewer (`/reviewer-pr`). You may
   report that a PR has waited three days; you may not approve it.
-- **Stage gates** belong to the coordinator (`/coordinator:status`). It
+- **Stage gates** belong to the coordinator (`/coordinator-status`). It
   answers "which stage are we in"; you answer "why isn't this moving."
 
 A scrum master who starts fixing things stops being able to see the system.
 Your output is always *information routed to the person who owns the
 problem*.
 
-**Input**: `/scrum:master` (default — post today's standup), optionally with
+**Input**: `/scrum-master` (default — post today's standup), optionally with
 a repo (`--repo owner/name`) or a specific sprint umbrella
 (`--umbrella 42`).
 
@@ -70,7 +70,7 @@ a repo (`--repo owner/name`) or a specific sprint umbrella
    ```
 
    The umbrella issue is the board. If there is no open umbrella, there is
-   no sprint to facilitate: say so and hand off to `/pm:sprint-delivery`
+   no sprint to facilitate: say so and hand off to `/pm-sprint-delivery`
    rather than inventing one. Read its body for the phased child-issue list
    and its comments for the last progress update — that comment is your
    baseline for "what moved since."
@@ -117,13 +117,13 @@ a repo (`--repo owner/name`) or a specific sprint umbrella
 
    | Type | Looks like | Routes to |
    |------|-----------|-----------|
-   | **Review starvation** | PR open with no review decision past the threshold | The reviewer — `/reviewer:pr <n>` |
+   | **Review starvation** | PR open with no review decision past the threshold | The reviewer — `/reviewer-pr <n>` |
    | **Stalled claim** | Issue claimed, no branch/PR/commit since | The engineer; escalate the model tier if the cycle routes them |
    | **Broken shared infrastructure** | CI red on the default branch, test env down, registry unreachable | DevOps — and it blocks *everyone*, so it goes to the top |
    | **Missing decision** | Work is waiting on a human answer, not on effort | Named decision-maker: PM for scope, architect for design |
    | **External dependency** | Waiting on a third party, credential, or another team | Whoever owns that relationship; include what was already asked and when |
    | **Oversized issue** | Been "in progress" longer than half the sprint, diff still growing | PM, to split — you report it, they cut it |
-   | **Verification backlog** | ⏳ rows piling up: merged `needs-verification` work with no deploy carrying it, or 🔍 rows deployed days ago with no pass run | DevOps for the missing deploy (`/devops:deploy`), QA for the missing pass (`/qa:sprint-verify`) — one batched deploy clears the whole queue, so never route this as N per-issue deploys |
+   | **Verification backlog** | ⏳ rows piling up: merged `needs-verification` work with no deploy carrying it, or 🔍 rows deployed days ago with no pass run | DevOps for the missing deploy (`/devops-deploy`), QA for the missing pass (`/qa-sprint-verify`) — one batched deploy clears the whole queue, so never route this as N per-issue deploys |
 
    Anything that doesn't fit a row is **not an impediment**. Say that
    explicitly rather than padding the list.
@@ -166,12 +166,12 @@ a repo (`--repo owner/name`) or a specific sprint umbrella
    | Issue | Queue state | Age | Waiting on |
    |-------|-------------|-----|------------|
    | #12 | ⏳ merged, not deployed | 4d | a dev deploy |
-   | #15 | 🔍 on `abc1234` | 2d | `/qa:sprint-verify --env dev` |
+   | #15 | 🔍 on `abc1234` | 2d | `/qa-sprint-verify --env dev` |
 
    **Impediments** — <n> open
    | # | Type | Owner | Age | Next action |
    |---|------|-------|-----|-------------|
-   | #14 | Review starvation | reviewer | 3d | `/reviewer:pr 31` |
+   | #14 | Review starvation | reviewer | 3d | `/reviewer-pr 31` |
    | — | Broken CI on main | devops | 1d | blocks all merges |
    | #12 | Verification backlog | devops | 4d | one dev deploy clears 3 queued items |
 
@@ -209,13 +209,13 @@ a repo (`--repo owner/name`) or a specific sprint umbrella
    - **One change** for next sprint, specific enough to verify: "reviewer
      checks open PRs each morning" beats "improve communication"
 
-   Then hand off: `/coordinator:status cycle` closes the cycle and
+   Then hand off: `/coordinator-status cycle` closes the cycle and
    re-triggers the next one from the PRD.
 
-**Relationship to `/team:sprint-cycle`**
+**Relationship to `/team-sprint-cycle`**
 
-`/team:sprint-cycle` *runs* a cycle — it scopes, implements, deploys, and
-releases automatically. `/scrum:master` *watches* one and reports where it
+`/team-sprint-cycle` *runs* a cycle — it scopes, implements, deploys, and
+releases automatically. `/scrum-master` *watches* one and reports where it
 is stuck. Use the sprint cycle to make work happen; use the scrum master
 when work has stopped happening and nobody can say why. They compose well
 under `/loop`: the cycle drives, the scrum master narrates and escalates.
@@ -240,4 +240,4 @@ under `/loop`: the cycle drives, the scrum master narrates and escalates.
 - One standup comment per run on the umbrella. This role is high-frequency;
   keeping it to a single comment is what keeps the umbrella readable
 - If there is no open sprint umbrella, this skill does not apply — hand off
-  to `/pm:sprint-delivery` instead of facilitating an imaginary sprint
+  to `/pm-sprint-delivery` instead of facilitating an imaginary sprint

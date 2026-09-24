@@ -18,7 +18,7 @@ version and nobody can say what is actually on it. One deploy → one
 verification pass → one commit stamped on every result. If someone needs an
 issue verified sooner, the answer is a deploy, not a private build on dev.
 
-**Input**: `/qa:sprint-verify` (default: the newest open sprint umbrella,
+**Input**: `/qa-sprint-verify` (default: the newest open sprint umbrella,
 `dev` environment). Options: `--umbrella N`, `--env dev|prod`,
 `--url <base-url>`, `--commit <sha>` (assert what should be running),
 `--only #12,#15` (re-run specific queue items after a redeploy).
@@ -26,9 +26,9 @@ issue verified sooner, the answer is a deploy, not a private build on dev.
 **Preconditions — refuse rather than fake**
 
 1. An open sprint umbrella with a **Verification queue** section (created by
-   `/pm:sprint-delivery`). No queue → nothing to batch; say so and stop
+   `/pm-sprint-delivery`). No queue → nothing to batch; say so and stop
 2. A deploy record for the target environment on that umbrella: commit + URL,
-   posted by `/devops:deploy`. No deploy record → the pass has no version to
+   posted by `/devops-deploy`. No deploy record → the pass has no version to
    verify against
 3. At least one queue item marked 🔍 *ready to verify* — items still ⏳
    *awaiting deploy* (their PR merged after the deployed commit) are **not**
@@ -46,7 +46,7 @@ issue verified sooner, the answer is a deploy, not a private build on dev.
 
    From the body: every queue row — issue number, what to verify, target
    environment, current status. From the comments: the most recent
-   `/devops:deploy` record for `--env` (deployed commit + URL). Build the
+   `/devops-deploy` record for `--env` (deployed commit + URL). Build the
    working list: 🔍 ready items only, in queue order.
 
 2. **Confirm what is actually running — this is the pass's identity**
@@ -59,13 +59,13 @@ issue verified sooner, the answer is a deploy, not a private build on dev.
    If the running commit differs from the umbrella's deploy record, stop and
    report the drift: someone deployed over the sprint's version, and the
    queue's readiness was computed against a version that is no longer there.
-   Re-deploy (`/devops:deploy`) and re-run this pass.
+   Re-deploy (`/devops-deploy`) and re-run this pass.
 
 3. **Verify every ready item in one session**
 
    Walk the working list against that one URL:
 
-   - **UI items** — hand them to `/qa:e2e-test` as a single run against the
+   - **UI items** — hand them to `/qa-e2e-test` as a single run against the
      deployed URL, covering every UI queue item's flow in that one pass (not
      one e2e run per issue). Its screenshots are this pass's evidence, and
      its test-data cleanup rules apply to anything the run creates
@@ -118,7 +118,7 @@ issue verified sooner, the answer is a deploy, not a private build on dev.
 
 6. **File every failure as a defect, immediately**
 
-   Hand each ❌ to `/qa:issue-report`: one issue per finding, the deployed
+   Hand each ❌ to `/qa-issue-report`: one issue per finding, the deployed
    `<commit>` and environment recorded in the issue, evidence attached, and
    cross-linked to the original issue in both directions. The original
    issue's queue row goes ❌ with the defect number — reopening or re-scoping
@@ -131,8 +131,8 @@ issue verified sooner, the answer is a deploy, not a private build on dev.
    > next deploy (#23, #24). Sprint verification gate: NOT clear.
    > Posted on umbrella #17."
 
-   A clear gate is the evidence `/pm:sprint-delivery close` and
-   `/team:sprint-cycle`'s close stage require. An unclear one blocks the
+   A clear gate is the evidence `/pm-sprint-delivery close` and
+   `/team-sprint-cycle`'s close stage require. An unclear one blocks the
    close — say so plainly rather than rounding up.
 
 **Prod passes**
@@ -167,4 +167,4 @@ one prod deploy, one pass, one commit. Additionally:
   create data without the ok above
 - This skill verifies and reports — it does not change sprint scope, close
   issues, or decide whether a failed item ships anyway (PM), and it does not
-  deploy (`/devops:deploy`)
+  deploy (`/devops-deploy`)

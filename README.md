@@ -166,6 +166,9 @@ one), and drive one cycle:
 # 8. Verify the whole sprint at once, against the commit you just deployed
 /qa-sprint-verify --env dev
 
+# 8b. Provisioned dev just for that pass? Release it once results are posted
+/devops-deploy teardown dev
+
 # 8a. Prove it works (screenshots + e2e/E2E-REPORT.md; asks for sample data first)
 /qa-e2e-test
 
@@ -214,7 +217,10 @@ Or hand the middle of the cycle to the automation:
   verification queue; one deploy makes them all checkable, and
   `/qa-sprint-verify` clears the queue against that single commit. It's
   what keeps your dev environment on one known version instead of whatever
-  the last person needed to check.
+  the last person needed to check. If you provision the environment per
+  pass rather than keep one running, the batch is also what keeps it to
+  one provision per sprint: `/devops-deploy teardown dev` releases it once
+  the pass's results are posted, never before.
 - **Skills propose before they act on anything hard to undo** — expect to
   be asked before issues are filed in bulk, scope is cut, or prod is
   touched.

@@ -21,7 +21,9 @@ can't be proven done by CI; they need a running environment. Those are marked
 at scoping time and verified **together, against one deployed version**,
 after the sprint deploys — never one issue at a time. Verifying issue by
 issue means redeploying dev per issue, so dev is never running one known
-version and nobody can say what's on it. The umbrella carries the
+version and nobody can say what's on it — and where the environment is
+provisioned on demand and torn down after, it means paying for one
+provision per issue instead of one per sprint. The umbrella carries the
 **verification queue** that makes this trackable.
 
 **Input**: A sprint goal (e.g., `/pm-sprint-delivery ship PDF upload flow`),

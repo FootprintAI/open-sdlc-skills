@@ -290,6 +290,13 @@ underpowered.
    - **Empty queue** (nothing needed a deployed environment this cycle):
      say so on the umbrella and move on — an empty queue is a legitimate
      result, an unchecked one is not
+   - **Per-pass environment**: if step 6 provisioned the environment for
+     this pass (its deploy comment says so), the pass is what releases
+     it — once `/qa-sprint-verify` reports the results posted and every
+     ❌ filed, run `/devops-deploy teardown dev`. Not before: a ❌ whose
+     defect still needs a repro screenshot, or an item being re-checked,
+     keeps the environment up. A persistent shared dev rung is left
+     running, as it always was
 
    In `verify` mode, stop here and report the pass.
 

@@ -1,8 +1,8 @@
 ---
 name: "DevOps: Deploy"
-description: Deploy a service git-natively — commit locally, push, and converge the target environment to exactly that commit, then run and verify it there. Deploys only committed state, verifies health after every deploy, and treats prod as confirmation-gated. Records the deployed commit on the sprint umbrella and opens the batched verification window for the issues that version now carries. Works with whatever the project already uses (Docker Compose over SSH, Kubernetes, a PaaS, or a CI deploy job).
+description: Deploy a service git-natively — commit locally, push, and converge the target environment to exactly that commit, then run and verify it there. Deploys only committed state, verifies health after every deploy, and treats prod as confirmation-gated. Records the deployed commit on the sprint umbrella and opens the batched verification window for the issues that version now carries; for environments provisioned per pass, tears the environment down again only once the pass's results are on the umbrella. Works with whatever the project already uses (Docker Compose over SSH, Kubernetes, a PaaS, or a CI deploy job).
 category: DevOps
-tags: [devops, deploy, git, docker, kubernetes, ssh, rollback, verification, sprint]
+tags: [devops, deploy, git, docker, kubernetes, ssh, rollback, verification, sprint, teardown, ephemeral]
 ---
 
 Act as the **DevOps role** deploying a service. The deployment model is
@@ -14,6 +14,11 @@ Act as the **DevOps role** deploying a service. The deployment model is
 `/devops-deploy frontend to prod`). Default environment is the lowest
 non-production rung (`dev` / `staging` / `demo` — whatever this project
 calls it); `prod` is never a default.
+
+Mode: `/devops-deploy teardown <env>` releases an environment that was
+provisioned for a verification pass (step 8). It applies only to
+per-pass environments, never to a persistent shared rung and never to
+`prod`.
 
 **Deployment principles**
 
@@ -35,6 +40,13 @@ calls it); `prod` is never a default.
 - **Use the project's existing mechanism** — this skill does not impose a
   platform. Read the repo first and deploy the way it is already set up to
   be deployed
+- **One provision per verification pass** — when the environment is
+  provisioned on demand rather than always on, its lifetime is the sprint's
+  batched pass: provision once, run every ready item against that one
+  commit, tear down once. Provisioning per issue multiplies the cost by
+  the queue length and leaves nobody able to say which version any result
+  was checked on. Teardown waits for the results to be on the umbrella,
+  because the environment is the only place the evidence can be taken
 
 **Steps**
 
@@ -162,6 +174,49 @@ calls it); `prod` is never a default.
    For **prod** deploys, the same applies for queue items flagged `dev + prod`;
    the prod pass covers only those.
 
+   If this environment was **provisioned for the pass** (it did not exist
+   before this deploy, or the project provisions verification environments
+   on demand), say so in the window comment — `Environment: provisioned for
+   this pass; torn down after results post` — so QA knows the evidence has
+   to be captured before the environment goes away, and step 8 knows it
+   owns the teardown.
+
+8. **Tear the environment down — `teardown` mode, per-pass environments
+   only**
+
+   The environment's job was one batched pass. It is released once, after
+   that pass, on evidence that the pass is actually finished:
+
+   - Read the umbrella. The newest `/qa-sprint-verify` results comment for
+     this environment must name the commit step 7 opened the window on,
+     and every ❌ row in it must already carry a defect number — a ❌ with
+     no defect still needs the environment for `/qa-issue-report` to
+     capture its repro. Any of that missing → **do not tear down**; report
+     what is outstanding and stop
+   - Confirm no pass is in flight: nobody has claimed the window without
+     posting results (ask on the umbrella if in doubt — a torn-down
+     environment mid-pass discards every item verified so far)
+   - Confirm every evidence link in the results comment points somewhere
+     that outlives the environment (the e2e report committed to the repo,
+     attachments on the issues) — not at the environment's own URL. A
+     result whose only evidence is a link into a deleted environment is no
+     longer a result
+   - Release the environment the way the project provisions it (compose
+     down and remove, delete the namespace or review app, stop the
+     instance), and remove any route or DNS that pointed at it
+   - Post on the umbrella:
+
+     ```markdown
+     ## Dev environment torn down — was `abc1234` @ https://dev.example.com — <date>
+
+     Verification pass on `abc1234` posted <time>: 3 ✅, 1 ❌ (defect #31 filed),
+     1 ⚠️. Evidence: e2e report at docs/e2e/2026-09-26.md, #31 has its logs.
+     Items still ⏳ (#23, #24) go to the next provision.
+     ```
+
+   The umbrella's **Deployed to dev** line then reads "torn down — was
+   `<commit>`", so nobody reads a dead URL as a running version.
+
 **Rollback**
 
 The model makes rollback boring, which is the point: deploy the previous
@@ -195,5 +250,13 @@ rollback is never silent.
 - Every deploy records its commit and URL on the sprint umbrella, for every
   rung — a deployed version nobody can name is a version nobody can verify
   against
+- **Never tear down an environment ahead of its results.** No results
+  comment for that commit, a ❌ without a defect filed, evidence that only
+  lives on the environment, or a pass someone is still running — any one
+  of these keeps the environment up. The cost of one more hour of runtime
+  is small; the cost of a pass that has to be re-provisioned and re-run is
+  the whole thing the batch was meant to save
+- `teardown` never applies to `prod` or to a persistent shared rung; on
+  those, "release" means deploy the next version, never delete
 - This skill deploys and verifies — it does not write application code
   (that's `/engineer-implement`) or decide what ships (that's the sprint)

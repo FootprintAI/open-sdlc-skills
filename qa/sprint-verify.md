@@ -1,8 +1,8 @@
 ---
 name: "QA: Sprint Verify"
-description: Run the sprint's batched verification pass — every issue that needs checking against a running environment, verified together against ONE deployed version right after the sprint deploys. Reads the verification queue off the sprint umbrella issue, stamps every result with the commit it was verified on, files failures as defects, and reports what is still unverified.
+description: Run the sprint's batched verification pass — every issue that needs checking against a running environment, verified together against ONE deployed version right after the sprint deploys. Reads the verification queue off the sprint umbrella issue, stamps every result with the commit it was verified on, files failures as defects, and reports what is still unverified. When the environment was provisioned just for this pass, captures evidence that outlives it and hands the teardown back to DevOps only once every result is posted.
 category: QA
-tags: [qa, verification, sprint, umbrella-issue, deploy, dev, prod, batch, evidence]
+tags: [qa, verification, sprint, umbrella-issue, deploy, dev, prod, batch, evidence, ephemeral]
 ---
 
 Act as QA running the **sprint's verification pass**. Some issues can't be
@@ -17,6 +17,13 @@ by issue means redeploying dev per issue, so dev is never running one known
 version and nobody can say what is actually on it. One deploy → one
 verification pass → one commit stamped on every result. If someone needs an
 issue verified sooner, the answer is a deploy, not a private build on dev.
+
+The same rule holds — harder — when the environment is **provisioned for
+the pass** and torn down afterwards. Then every verification costs a
+provision, so per-issue verification costs the queue length in provisions;
+the batch costs one. It also means the environment is gone soon after the
+pass: evidence has to be captured into something durable *during* the pass,
+and the teardown must wait until every result is posted.
 
 **Input**: `/qa-sprint-verify` (default: the newest open sprint umbrella,
 `dev` environment). Options: `--umbrella N`, `--env dev|prod`,
@@ -35,6 +42,10 @@ issue verified sooner, the answer is a deploy, not a private build on dev.
    verifiable in this pass; list them as carried to the next deploy
 4. The environment is still running that commit when the pass starts. A pass
    split across two versions proves nothing
+5. If the deploy record says the environment was provisioned for this pass,
+   nobody tears it down while this pass runs. Claim the window with one
+   comment on the umbrella (`Verification pass starting on <commit>`)
+   before the first item, so DevOps can see a pass is in flight
 
 **Steps**
 
@@ -79,6 +90,12 @@ issue verified sooner, the answer is a deploy, not a private build on dev.
      author
    - Evidence per item is mandatory: a screenshot, a response body, or a
      command's output. No evidence → not verified, regardless of what you saw
+   - Evidence lives somewhere that outlives the environment: the e2e report
+     and its screenshots committed to the repo, response bodies and command
+     output pasted into the results comment or attached to the issue. A
+     link into the environment itself (`https://dev…/documents/42`) is a
+     pointer, not evidence — once the environment is torn down or
+     redeployed it points at nothing, and the result goes with it
 
 4. **Record each item's result**
 
@@ -135,6 +152,28 @@ issue verified sooner, the answer is a deploy, not a private build on dev.
    `/team-sprint-cycle`'s close stage require. An unclear one blocks the
    close — say so plainly rather than rounding up.
 
+8. **Release the environment — only if it was provisioned for this pass**
+
+   Skip this step for a persistent shared rung; it keeps running the
+   deployed version until the next deploy. For a per-pass environment,
+   this pass is the reason it exists, and finishing the pass is what
+   releases it:
+
+   - Everything above is done: the results comment is on the umbrella
+     naming `<commit>`, every ❌ has its defect filed with evidence
+     attached, every evidence link points at something durable
+   - Then hand off: `/devops-deploy teardown <env>`. DevOps re-checks those
+     same conditions from the umbrella before removing anything and posts
+     the teardown record; this skill never deletes the environment itself
+   - If anything is still outstanding — a defect not yet filed, a ⚠️ item
+     whose missing sample data is arriving today, an item you want a
+     second look at — say so instead of handing off. Keeping the
+     environment up another hour is cheap; re-provisioning to redo one
+     item is the cost the batch exists to avoid
+
+   Add one line to the step 7 report: `Environment: released to DevOps for
+   teardown` or `Environment: kept up — <what is outstanding>`.
+
 **Prod passes**
 
 Prod verification is optional and covers only queue items flagged for prod
@@ -165,6 +204,11 @@ one prod deploy, one pass, one commit. Additionally:
 - Never point this pass at production unless the run was explicitly asked
   for prod, and never at a customer-facing environment for UI items that
   create data without the ok above
+- Never hand an environment off for teardown with a ❌ that has no defect
+  filed, a result that isn't posted, or evidence that only exists on the
+  environment — and never ask for a teardown while another pass has claimed
+  the window. Torn down too early, the environment takes the pass's proof
+  with it
 - This skill verifies and reports — it does not change sprint scope, close
   issues, or decide whether a failed item ships anyway (PM), and it does not
-  deploy (`/devops-deploy`)
+  deploy or tear down (`/devops-deploy`)

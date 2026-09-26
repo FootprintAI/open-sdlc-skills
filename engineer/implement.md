@@ -132,7 +132,18 @@ else:
 
    - Read the issue: acceptance criteria, phase label, `Blocked by` links,
      the umbrella issue it belongs to. If acceptance criteria are missing
-     or untestable, ask on the issue (or the user) before writing code
+     or untestable, or the design doc is silent on a behaviour the code
+     must choose, **do not guess**. Interactively: ask on the issue (or
+     the user) before writing code. Under `/team-sprint-cycle` (nobody to
+     answer): write the question on the issue with the default you would
+     have taken and why, add the `needs-decision` label, add a ❓ row to
+     the sprint umbrella's **Open questions**, comment `${who}-${model}
+     parked: waiting on a decision` to release the claim, and stop — the
+     cycle picks the next issue. A parked issue is a correct outcome; a
+     PR built on a guess is not
+   - An issue that already carries `needs-decision` is not yours to start:
+     the question is open, and starting anyway is guessing with extra
+     steps
    - Note whether the issue carries `needs-verification` and its
      **Verify on `<env>`** steps — a criterion that CI cannot prove, which
      the sprint's batched verification pass will check on the deployed
@@ -269,6 +280,11 @@ else:
   that's the same offence as weakening a test, one layer up
 - Stay inside the issue's scope; new problems found become new issues with
   a comment linking where they were found
+- Never resolve an open question by picking the answer yourself. A
+  criterion you had to invent, a behaviour you chose because the doc was
+  silent, a dependency you assumed exists — each is a `needs-decision`
+  question on the issue, and unattended it parks the issue. The default
+  you would have taken goes in the question, not in the code
 - Never deploy your own branch to the shared dev/staging environment to
   check your work — that environment runs the sprint's version for the
   whole team. A `needs-verification` issue ships with runnable verification

@@ -1,6 +1,6 @@
 ---
 name: "Team: Sprint Cycle"
-description: Drive a complete sprint cycle end to end by chaining five roles and enforcing the hand-off between them. A project manager scopes the sprint first (umbrella issue + prioritized, flow-first child issues, per the /pm-sprint-delivery contract), engineers automatically implement every scoped issue (each routed to a Claude model tier — model:sonnet / model:opus / model:fable label + rationale — implemented one worktree per issue under that model via the /engineer-implement contract), DevOps releases the cycle's merged work to the dev environment via the /devops-deploy contract, QA verifies the cycle's needs-verification issues in one batched pass against that single deployed version via the /qa-sprint-verify contract, and once the PM closes the cycle a release manager cuts the release — tag on the codebase and GitHub, release notes, and the release image build workflow triggered — via the /release-cut contract. Pair with /loop for a self-running cycle.
+description: Drive a complete sprint cycle end to end by chaining five roles and enforcing the hand-off between them. A project manager scopes the sprint first (umbrella issue + prioritized, flow-first child issues, per the /pm-sprint-delivery contract), engineers automatically implement every scoped issue (each routed to a Claude model tier — model:sonnet / model:opus / model:fable label + rationale — implemented one worktree per issue under that model via the /engineer-implement contract), DevOps releases the cycle's merged work to the dev environment via the /devops-deploy contract, QA verifies the cycle's needs-verification issues in one batched pass against that single deployed version via the /qa-sprint-verify contract, and once the PM closes the cycle a release manager cuts the release — tag on the codebase and GitHub, release notes, and the release image build workflow triggered — via the /release-cut contract. Pair with /loop for a self-running cycle — which refuses to start while the umbrella has open questions a human hasn't answered, and parks (never guesses) any question found mid-run.
 category: Team
 tags: [team, sprint, pm, engineer, devops, qa, verification, release, umbrella-issue, model-routing, worktree, deploy, tag, loop]
 ---
@@ -75,6 +75,23 @@ and closing hands straight to the release manager stage — which cuts the relea
 you've turned on `--auto-release`, or otherwise leaves a confirmation
 waiting for you before the next `/loop` tick.
 
+**The gate before continuous mode: no open questions.** An unattended
+cycle has nobody to ask, so everything it would have asked is asked
+first. The PM stage records every point an implementer would have to
+guess as a row on the umbrella's **Open questions** section (per the
+`/pm-sprint-delivery` contract, with the default the agent would
+otherwise assume), and a loop invocation refuses to advance while any row
+is ❓ open: it reports the rows and their defaults and stops, so the human
+answers them in one sitting rather than being pinged one issue at a time
+for a week. If the team has a runtime readiness check (an agent-environment
+skill that proves the deploy and verify tools work), a `not ready` verdict
+is a gate too — "does dev have a backend the CP can create boxes on?" is
+a question, and the readiness matrix is where it gets answered. Once the
+loop is running, a question found mid-implementation **parks that issue
+and the loop moves on** (step 3); it never stalls the cycle and it is
+never answered by guessing. Single-step interactive invocations are not
+gated — a human is present to answer.
+
 **Model routing rubric** (engineer stage)
 
 Classify each scoped issue by the hardest thing it demands, not its line
@@ -129,13 +146,22 @@ underpowered.
      deploy). This happens at scoping time, not when the issue merges —
      step 7 can only batch what was flagged
    - An issue is scope-eligible only when it is **ready**: not blocked,
-     actionable (acceptance criteria or a repro path — comment asking for
-     criteria instead of guessing), not already in progress, and an
-     engineering task rather than an open product/design question. "Not
-     already in progress" is now concrete, not a guess: an issue with an
-     open linked PR, or a live `${who}-${model} is starting processing
-     it` claim comment (per the `/engineer-implement` contract) that
-     doesn't look stalled, is in progress — skip it
+     actionable (acceptance criteria or a repro path), **no open
+     question** (no `needs-decision` label, no ❓ row for it on the
+     umbrella), not already in progress, and an engineering task rather
+     than an open product/design question. Missing criteria or an
+     undecided behaviour are not fixed by guessing: they become a row on
+     the umbrella's **Open questions** with the default the agent would
+     assume, per the `/pm-sprint-delivery` contract, and the issue waits
+     there. "Not already in progress" is now concrete, not a guess: an
+     issue with an open linked PR, or a live `${who}-${model} is starting
+     processing it` claim comment (per the `/engineer-implement`
+     contract) that doesn't look stalled, is in progress — skip it
+   - In continuous mode, this stage is also the gate: if the umbrella has
+     any ❓ open question, or the team's runtime readiness check reports
+     `not ready`, post the list (rows + defaults, or the readiness gaps)
+     as this invocation's cycle update and **stop** — no routing, no
+     implementation. The loop advances again once every row is ✅ or ⏭
 
 2. **Route every scoped Phase 1 issue and label it**
 
@@ -194,6 +220,19 @@ underpowered.
    - Remove each worktree once its PR is open (`git worktree remove`) —
      the branch lives on the remote; the worktree does not outlive the
      invocation
+   - **A question found mid-implementation parks the issue; it does not
+     stall the loop.** When the engineer reports it would have to guess
+     (criteria turn out untestable, the design doc is silent on a
+     behaviour the code needs, a dependency it was told exists does not):
+     the question goes on the issue with the default the engineer would
+     have taken, the issue gets `needs-decision`, a ❓ row is added to the
+     umbrella's **Open questions**, the claim is released (`${who}-${model}
+     parked: waiting on a decision`), the branch is kept as evidence, the
+     worktree is removed, and this stage **moves to the next ready
+     issue**. It is not a stall (step 4 does not escalate the model tier
+     for it) and it is not a failure. A loop whose remaining issues are
+     all parked or done terminates cleanly, saying which are waiting and
+     on whom
 
 4. **Escalate when an attempt stalls**
 
@@ -230,8 +269,14 @@ underpowered.
      **Verification:** <queue empty | 3 ✅ on `<commit>`, 1 ❌ (defect #31),
        2 ⏳ awaiting the next deploy>
      **Cut release:** <not yet | `vX.Y.Z` tagged, build `<passed|failed>`>
+     **Waiting on a decision:** <none | #15 (2d, architect — default: fail
+       loudly), #17 (1d, devops)>
      **Stalled:** none
      ```
+
+   In continuous mode the update also states the gate: `Gate: open —
+   loop advancing` or `Gate: closed — N open questions / readiness not
+   ready; see above`.
 
 6. **DevOps stage — release the cycle's merged work to dev (mode:
    deploy, or automatically once the scope's PRs are merged)**
@@ -395,6 +440,13 @@ answers.
 - A merged PR is not a verified issue: `needs-verification` items stay on
   the umbrella's queue until a pass stamps them with the commit they were
   verified on
+- **No unattended cycle over open questions.** Continuous mode does not
+  scope, route, or implement while the umbrella has a ❓ row or the
+  runtime readiness check says `not ready`; it reports and stops. A
+  question found mid-run parks its issue with the default written down
+  and the loop moves on — it is never resolved by the agent picking the
+  default itself. Interactive single steps ask the human directly, as
+  they always did
 - All `/pm-sprint-delivery` guardrails bind the PM stage, all
   `/engineer-implement` guardrails bind the engineer stage, all
   `/devops-deploy` guardrails bind the DevOps stage, all

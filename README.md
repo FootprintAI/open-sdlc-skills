@@ -221,6 +221,14 @@ Or hand the middle of the cycle to the automation:
   pass rather than keep one running, the batch is also what keeps it to
   one provision per sprint: `/devops-deploy teardown dev` releases it once
   the pass's results are posted, never before.
+- **Questions are batched too, before auto-pilot.** `/pm-sprint-delivery`
+  writes every point an implementer would have to guess onto the
+  umbrella's open-questions section, each with the default the agent
+  would otherwise assume. `/loop /team-sprint-cycle` won't start while
+  any is unanswered, and a question found mid-run parks that issue and
+  moves on — the loop never stalls on a human and never answers for one.
+  Unanswered past two days, `/scrum-master` escalates it as a missing
+  decision; past five, it's a scope call.
 - **Skills propose before they act on anything hard to undo** — expect to
   be asked before issues are filed in bulk, scope is cut, or prod is
   touched.

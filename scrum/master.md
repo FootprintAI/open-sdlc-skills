@@ -120,7 +120,7 @@ a repo (`--repo owner/name`) or a specific sprint umbrella
    | **Review starvation** | PR open with no review decision past the threshold | The reviewer — `/reviewer-pr <n>` |
    | **Stalled claim** | Issue claimed, no branch/PR/commit since | The engineer; escalate the model tier if the cycle routes them |
    | **Broken shared infrastructure** | CI red on the default branch, test env down, registry unreachable | DevOps — and it blocks *everyone*, so it goes to the top |
-   | **Missing decision** | Work is waiting on a human answer, not on effort | Named decision-maker: PM for scope, architect for design |
+   | **Missing decision** | Work is waiting on a human answer, not on effort — a `needs-decision` issue, or a ❓ row on the umbrella's **Open questions** older than **2 days** | Named decision-maker: PM for scope, architect for design, DevOps for environment/credential questions. Quote the question *and its listed default* so answering is one word. Past **5 days**, route it to the PM as a scope call (defer the issue) rather than keep the sprint waiting on it |
    | **External dependency** | Waiting on a third party, credential, or another team | Whoever owns that relationship; include what was already asked and when |
    | **Oversized issue** | Been "in progress" longer than half the sprint, diff still growing | PM, to split — you report it, they cut it |
    | **Verification backlog** | ⏳ rows piling up: merged `needs-verification` work with no deploy carrying it, or 🔍 rows deployed days ago with no pass run | DevOps for the missing deploy (`/devops-deploy`), QA for the missing pass (`/qa-sprint-verify`) — one batched deploy clears the whole queue, so never route this as N per-issue deploys |
@@ -172,6 +172,7 @@ a repo (`--repo owner/name`) or a specific sprint umbrella
    | # | Type | Owner | Age | Next action |
    |---|------|-------|-----|-------------|
    | #14 | Review starvation | reviewer | 3d | `/reviewer-pr 31` |
+   | #15 | Missing decision | architect | 3d | answer on #1821: "null `owner` rows — skip, fail, or backfill?" (default: fail loudly) |
    | — | Broken CI on main | devops | 1d | blocks all merges |
    | #12 | Verification backlog | devops | 4d | one dev deploy clears 3 queued items |
 

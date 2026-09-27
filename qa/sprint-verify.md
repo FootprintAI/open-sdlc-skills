@@ -33,7 +33,11 @@ and the teardown must wait until every result is posted.
 **Preconditions — refuse rather than fake**
 
 1. An open sprint umbrella with a **Verification queue** section (created by
-   `/pm-sprint-delivery`). No queue → nothing to batch; say so and stop
+   `/pm-sprint-delivery`). No queue → nothing to batch; say so and stop.
+   If the repo has **several** open umbrellas, the environment is shared
+   by all of them: read every open umbrella's queue, and the pass covers
+   every 🔍 row across them — one pass per deployed commit per repo, not
+   one per sprint. Results go on each umbrella whose rows they touch
 2. A deploy record for the target environment on that umbrella: commit + URL,
    posted by `/devops-deploy`. No deploy record → the pass has no version to
    verify against

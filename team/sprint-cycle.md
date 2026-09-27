@@ -424,7 +424,12 @@ answers.
   An engineer-stage invocation that finds unscoped-but-ready issues
   hands them to the PM stage; it does not quietly implement them
 - One coordination point: adopt an open sprint umbrella, never duplicate
-  it; never run two open cycle umbrellas at once
+  it; never run two open cycle umbrellas at once. When a repo already
+  has several open umbrellas, the one this cycle advances is the one the
+  portfolio hub names as **active** (`/coordinator-sync`); if none is
+  named, that choice is a human item — report it and stop rather than
+  picking the newest. The others are parked or closed, never advanced in
+  parallel: they share one environment and one merge queue
 - Scope changes are visible: every add/remove happens in the umbrella
   body plus a comment — no silent scope drift; >5 issues created or
   scoped in one invocation need the user's confirmation

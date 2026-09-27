@@ -40,6 +40,7 @@ of them.
 | **Code Reviewer** | [`/reviewer-pr`](reviewer/pr.md) | Reviews a PR against the team contract: acceptance criteria covered by tests (verified by *running* them), no weakened tests, proto-as-source-of-truth, typed boundaries, scope matching the issue. Verdict posted on the PR page. |
 | **DevOps** | [`/devops-deploy`](devops/deploy.md) | Deploys git-natively: commit, push, converge the environment to exactly that commit, verify health on the real route. Platform-agnostic — uses whatever the repo already has (CI deploy job, Kubernetes, Compose over SSH, a PaaS). Dev before prod; prod is confirmation-gated with a backup. |
 | **Release Manager** | [`/release-cut`](release/cut.md) | Cuts a real release once work has shipped and been dev-verified: infers the semver bump and drafts categorized notes from PRs merged since the last tag, tags the codebase and GitHub at the same commit, publishes the GitHub Release, and triggers the release image build. Confirmation-gated; never moves or force-pushes a tag. |
+| **Coordinator** | [`/coordinator-sync`](coordinator/sync.md) | "Where was I?" across **every open sprint in the org**: reconciles each umbrella from evidence (PRs, CI, deploy records, verification and question rows), then posts one digest on a hub issue — what is **waiting on a human** (batched, with defaults), what **runs on its own**, what is **stalled** — with the exact next command per project. Enforces one active umbrella per repo, one environment per repo shared by all its umbrellas, cross-repo dependencies as open questions; `--advance` ticks each active project once under a global WIP cap. |
 | **Coordinator** | [`/coordinator-status`](coordinator/status.md) | Answers "where are we?" by reading each role's artifacts, gates stage advancement on evidence rather than claims, and when a cycle completes, closes it with a retro and re-triggers the next one from the PRD. |
 
 ## How the roles chain
@@ -199,7 +200,9 @@ Or hand the middle of the cycle to the automation:
 
 ### Tips
 
-- **Lost? Run `/coordinator-status`.** It reads the artifacts, tells you
+- **Lost? Run `/coordinator-status`** — or `/coordinator-sync` when it is
+  several projects at once and you want one page of what is waiting on
+  you. **`/coordinator-status`** reads the artifacts, tells you
   the current stage, and names the one next command to run.
 - **Don't skip stages.** Each skill consumes the previous one's artifact
   (the engineer reads the design doc; QA tests the PRD's MVP journey). Ask

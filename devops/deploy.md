@@ -142,7 +142,11 @@ per-pass environments, never to a persistent shared rung and never to
 
    - Find the sprint umbrella's **Verification queue** (from
      `/pm-sprint-delivery`). No umbrella or no queue → nothing to do; say so
-     and stop here
+     and stop here. If the repo has **several** open umbrellas, the
+     environment is theirs jointly: a deploy carries whatever is merged
+     from any of them, so check every open umbrella's queue and flip ⏳ →
+     🔍 wherever the row's merge commit is contained, posting the window
+     on each umbrella that gained a 🔍 row
    - Work out which queued issues are actually *in* this commit:
 
      ```bash

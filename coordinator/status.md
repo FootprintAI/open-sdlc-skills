@@ -32,7 +32,10 @@ is what stage 5 verifies.)
 **Input**: `/coordinator-status` (default — where are we), or
 `/coordinator-status advance` (check the current gate and hand off to the
 next stage), or `/coordinator-status cycle` (close a completed cycle and
-kick off the next one).
+kick off the next one). This skill is one project, deep; for every open
+sprint across the organization at once — which umbrella is active per
+repo, what is waiting on a human, what runs on its own — use
+`/coordinator-sync`, which applies these stage gates per project.
 
 **Steps**
 

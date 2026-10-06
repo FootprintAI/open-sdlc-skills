@@ -5,6 +5,8 @@ category: QA
 tags: [qa, testing, integration-test, docker, podman, testcontainers, postgres, redis, migrations, ci, golang, python, typescript]
 ---
 
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+
 Act as a QA engineer building the **integration-test suite**: the tests that
 run against *real* dependencies — a real Postgres, a real Redis, a real
 object store — launched in throwaway containers with **Docker or Podman**.

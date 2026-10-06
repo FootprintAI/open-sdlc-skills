@@ -19,8 +19,14 @@ the artifacts they produced are still there and still readable.
 
 Built and used daily by [FootprintAI](https://github.com/FootprintAI) —
 these are the skills our own team ships with, not a demo. Licensed under
-[Apache 2.0](LICENSE); no account, service, or vendor required to run any
-of them.
+[Apache 2.0](LICENSE).
+
+**Optimized for [Containarium](https://github.com/FootprintAI/Containarium).**
+The delivery roles (deploy, verify, environment setup, issue tracking) are
+built around Containarium — isolated per-pass boxes, scoped agent tokens, and
+the tracker broker — and they are at their best there. Planning, design,
+implementation, review and QA still work on any GitHub or GitLab repo; the
+deploy and environment skills assume Containarium.
 
 ## Roles
 
@@ -38,7 +44,8 @@ of them.
 | **QA Tester** | [`/qa-sprint-verify`](qa/sprint-verify.md) | The sprint's **batched verification pass**: the issues CI can't prove done wait on the umbrella's verification queue and are all checked against **one deployed commit**, right after the sprint deploys — never one issue at a time, because a dev environment redeployed per issue is a dev environment nobody can name a version for. Every result is stamped with the commit it was verified on; failures go straight to `/qa-issue-report`. |
 | **QA Tester** | [`/qa-issue-report`](qa/issue-report.md) | Files every defect found as a GitHub issue — one issue per finding, created *before* any fix is discussed. UI findings are verified live in a browser first (fresh defect screenshot + console errors), every issue records the app version/commit it was seen on, dedupes against existing issues, and cross-links related issues in both directions. |
 | **Code Reviewer** | [`/reviewer-pr`](reviewer/pr.md) | Reviews a PR against the team contract: acceptance criteria covered by tests (verified by *running* them), no weakened tests, proto-as-source-of-truth, typed boundaries, scope matching the issue. Verdict posted on the PR page. |
-| **DevOps** | [`/devops-deploy`](devops/deploy.md) | Deploys git-natively: commit, push, converge the environment to exactly that commit, verify health on the real route. Platform-agnostic — uses whatever the repo already has (CI deploy job, Kubernetes, Compose over SSH, a PaaS). Dev before prod; prod is confirmation-gated with a backup. |
+| **DevOps** | [`/devops-deploy`](devops/deploy.md) | Deploys git-natively **on Containarium**: commit, push/sync, converge the container to exactly that commit, verify health on the real route, then open the batched verification window on the sprint umbrella. Dev before prod; prod is confirmation-gated with a backup. Per-pass `verify-*` containers are deleted only after the results are posted. |
+| **DevOps** | [`/devops-containarium-env`](devops/containarium-env.md) | Sets up and *proves* the agent's own runtime — control-plane MCP, CLI and ssh path, build-credential path, committed dev config, permission rules — with a command per capability, so deploy and verification run unattended instead of handing steps back to a human. Credential steps stay with the human. |
 | **Release Manager** | [`/release-cut`](release/cut.md) | Cuts a real release once work has shipped and been dev-verified: infers the semver bump and drafts categorized notes from PRs merged since the last tag, tags the codebase and GitHub at the same commit, publishes the GitHub Release, and triggers the release image build. Confirmation-gated; never moves or force-pushes a tag. |
 | **Coordinator** | [`/coordinator-sync`](coordinator/sync.md) | "Where was I?" across **every open sprint in the org**: reconciles each umbrella from evidence (PRs, CI, deploy records, verification and question rows), then posts one digest on a hub issue — what is **waiting on a human** (batched, with defaults), what **runs on its own**, what is **stalled** — with the exact next command per project. Enforces one active umbrella per repo, one environment per repo shared by all its umbrellas, cross-repo dependencies as open questions; `--advance` ticks each active project once under a global WIP cap. |
 | **Coordinator** | [`/coordinator-status`](coordinator/status.md) | Answers "where are we?" by reading each role's artifacts, gates stage advancement on evidence rather than claims, and when a cycle completes, closes it with a retro and re-triggers the next one from the PRD. |
@@ -128,9 +135,16 @@ cp _shared/*.md ~/.claude/skills/_shared/
 New Claude Code sessions pick the skills up automatically. To install only
 some roles, copy just the files you want — the skills reference each other
 by name but degrade gracefully when one isn't installed. Keep `_shared/`
-alongside them: it holds the GitHub ↔ GitLab tracker mapping
-(`_shared/tracker.md`) that tracker-agnostic skills resolve their `gh` /
-`glab` commands from.
+alongside them: it holds the tracker mapping (`_shared/tracker.md`: GitHub ↔
+GitLab, plus `_shared/tracker-containarium.md` for runs bound to a Containarium
+tracker connection) that skills resolve their `gh` / `glab` / Containarium
+commands from, and the team conventions every skill points to:
+
+| Notice | Convention |
+|---|---|
+| [`_shared/labels.md`](_shared/labels.md) | Every issue carries exactly one type label — `bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore` — alongside the workflow labels (`sprint`, `release`, `needs-verification`, …). |
+| [`_shared/runtime.md`](_shared/runtime.md) | Routed issues name their agent runtime (`runtime:claude` default, `runtime:codex`), independent of the `model:*` tier; never a silent fallback; the claim comment carries the runtime and a `Box:` line. |
+| [`_shared/estimates.md`](_shared/estimates.md) | Every sprint and feature carries a time estimate: a `size:*` label, P50/P80 ship dates, and a Timetable on the umbrella that is re-forecast at every standup. |
 
 ## How to use — a worked cycle
 
@@ -267,14 +281,16 @@ only claim we'd make for them: they're load-bearing somewhere.
 We also build **[Containarium](https://containarium.dev)** — an
 open-source agent runtime (SSH-native isolation, eBPF egress policy,
 Kubernetes and LXC backends, GPU passthrough, MCP-native CLI). It's the
-disposable-box layer these skills keep referring to: the box
-`/qa-e2e-test` deploys into, the target `/devops-deploy` ships to.
+disposable-box layer these skills are built around: the box
+`/qa-e2e-test` deploys into, the target `/devops-deploy` ships to, and the
+runtime `/devops-containarium-env` sets up and proves.
 
-**You do not need it.** Every skill here dispatches on what your repo
-already has, and Containarium is one option among Kubernetes, Compose over
-SSH, CI jobs, and PaaS targets — never a default and never assumed. If you
-happen to want a purpose-built sandbox for agent workloads, it's Apache 2.0
-too.
+**The delivery skills assume it.** `/devops-deploy` and
+`/devops-containarium-env` are Containarium-specific by design — that is what
+lets them hand a verified commit, a per-pass environment, and a scoped agent
+token from one role to the next without a human in the loop. The planning,
+design, implementation, review and QA skills do not need it and work on any
+GitHub or GitLab repo. Containarium is Apache 2.0 too.
 
 ## License
 

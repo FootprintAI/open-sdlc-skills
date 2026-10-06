@@ -5,6 +5,8 @@ category: QA
 tags: [qa, verification, sprint, umbrella-issue, deploy, dev, prod, batch, evidence, ephemeral]
 ---
 
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+
 Act as QA running the **sprint's verification pass**. Some issues can't be
 proven done by CI — a migration that has to run against real data, a UI flow
 that only exists once deployed, a config or infra change, an integration with

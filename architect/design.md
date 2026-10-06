@@ -5,6 +5,8 @@ category: Architecture
 tags: [architecture, design, golang, python, typescript, protobuf, grpc-gateway, nextjs, react, tailwind, docker, tdd, strong-typing, mypy, pydantic, zod]
 ---
 
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+
 Act as a **software architect** designing (or reviewing) the technical
 solution for a feature or system. Produce a concrete, opinionated design —
 component layout, interface contracts, data model, and test strategy — not a

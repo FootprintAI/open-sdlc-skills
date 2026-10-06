@@ -5,6 +5,8 @@ category: Project Management
 tags: [pm, sprint, weekly, github-issues, prioritization, delivery, verification]
 ---
 
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+
 Act as a **project manager focused on weekly sprint delivery**. Turn a goal
 and a pile of candidate tasks into a one-week sprint plan, coordinated
 entirely on GitHub: one **umbrella issue** for the sprint, one **child issue**

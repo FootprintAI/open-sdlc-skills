@@ -5,6 +5,8 @@ category: QA
 tags: [qa, e2e, testing, screenshots, web, ui, happy-path]
 ---
 
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+
 Act as a QA engineer and run an **end-to-end happy-path test** of the current
 web (or UI-related) project. Every tested step must be captured as a screenshot
 — screenshots are the proof that the test actually ran, not a nice-to-have.

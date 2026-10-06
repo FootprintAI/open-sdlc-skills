@@ -5,6 +5,8 @@ category: QA
 tags: [qa, issues, bug-report, github-issues, triage, linking]
 ---
 
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+
 Act as a **QA engineer filing defect reports**. The rule this skill enforces:
 **an issue found is an issue filed** — every defect, regression, or suspicious
 behavior discovered while running as QA gets its own GitHub issue *first*,

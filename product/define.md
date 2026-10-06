@@ -5,6 +5,8 @@ category: Product
 tags: [product, pm, prd, requirements, user-stories, mvp, prioritization]
 ---
 
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+
 Act as a **product manager** defining what to build and why. Turn a raw
 idea, user complaint, or feature request into a **PRD** (product
 requirements document) that engineering can design and build against —

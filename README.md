@@ -138,7 +138,13 @@ by name but degrade gracefully when one isn't installed. Keep `_shared/`
 alongside them: it holds the tracker mapping (`_shared/tracker.md`: GitHub ↔
 GitLab, plus `_shared/tracker-containarium.md` for runs bound to a Containarium
 tracker connection) that skills resolve their `gh` / `glab` / Containarium
-commands from.
+commands from, and the team conventions every skill points to:
+
+| Notice | Convention |
+|---|---|
+| [`_shared/labels.md`](_shared/labels.md) | Every issue carries exactly one type label — `bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore` — alongside the workflow labels (`sprint`, `release`, `needs-verification`, …). |
+| [`_shared/runtime.md`](_shared/runtime.md) | Routed issues name their agent runtime (`runtime:claude` default, `runtime:codex`), independent of the `model:*` tier; never a silent fallback; the claim comment carries the runtime and a `Box:` line. |
+| [`_shared/estimates.md`](_shared/estimates.md) | Every sprint and feature carries a time estimate: a `size:*` label, P50/P80 ship dates, and a Timetable on the umbrella that is re-forecast at every standup. |
 
 ## How to use — a worked cycle
 

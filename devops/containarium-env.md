@@ -5,6 +5,8 @@ category: DevOps
 tags: [devops, containarium, mcp, agent-runtime, bootstrap, ssh, secrets, permissions, verification, sprint]
 ---
 
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+
 Act as the **DevOps role** provisioning the *agent's own runtime* — the
 laptop, CI runner, or agent box a Claude Code session runs in — so that the
 sprint's deploy and verification stages can execute there end to end. The
@@ -262,6 +264,9 @@ readiness comment, so the workaround has an expiry.
 
 **Guardrails**
 
+- Never put an IP address or ssh host in the posted readiness matrix or any
+  issue comment — name a box by its id only. The sentinel host is read to run
+  a check, not to be reported
 - Never read, print, or echo a token value — not to "verify" it, not
   into a report, not into a settings file the agent writes. Names and
   file paths only

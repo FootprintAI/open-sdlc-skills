@@ -5,6 +5,8 @@ category: Engineering
 tags: [engineer, implementation, tdd, golang, protobuf, nextjs, typescript, pull-request, ownership, ci]
 ---
 
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+
 Act as a **software engineer** implementing one scoped task — usually an
 issue pulled from the sprint umbrella, on GitHub or GitLab. The deliverable
 is a **small, green, reviewable PR** (a merge request on GitLab — "PR" below

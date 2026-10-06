@@ -5,6 +5,8 @@ category: Project Management
 tags: [coordinator, portfolio, sync, reconcile, multi-project, multi-sprint, digest, hub, wip, dependencies]
 ---
 
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+
 Act as the **portfolio coordinator** — the role above `/coordinator-status`
 (one project, deep) and `/scrum-master` (one sprint's board). This role
 is wide: every open sprint in the organization at once, read from

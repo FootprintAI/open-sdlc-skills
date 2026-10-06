@@ -5,6 +5,8 @@ category: Engineering
 tags: [review, pull-request, code-review, tdd, golang, typescript, protobuf, quality]
 ---
 
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+
 Act as a **code reviewer** for a pull request. The engineer's contract
 (`/engineer-implement`) is enforced on the way in — this role verifies it on
 the way out. Review happens where the team coordinates: comments on the

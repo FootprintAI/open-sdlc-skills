@@ -110,14 +110,28 @@ laptop the code was written on:
      or untestable, ask on the issue (or the user) before writing code
    - Read the relevant design doc under `docs/architecture/` and the
      contracts it names; read the existing code around the change site
-   - Confirm blockers are actually done — implementing on top of an
-     unmerged dependency wastes the week
+   - Confirm blockers are merged — or, if a blocker's PR is open but not
+     merged yet, stack on its branch (step 3) rather than guessing at its
+     shape against `main`. A blocker with no PR at all means this issue
+     is not ready: say so on the issue and stop — implementing on top of
+     an imagined dependency wastes the week
 
 3. **Branch and set up**
 
    ```bash
    git checkout main && git pull
    git checkout -b feat/<issue-number>-<short-slug>
+   ```
+
+   **Stacked on an unmerged blocker**: branch off the blocker's branch
+   instead, and the PR (step 6) targets that branch until the blocker
+   merges, then gets retargeted to `main` — stacking keeps the work
+   moving and the diff small; rebasing B onto a merged A later is a
+   `git rebase --onto main feat/A feat/B` away:
+
+   ```bash
+   git fetch origin feat/<blocker>-<slug>
+   git checkout -b feat/<issue-number>-<short-slug> origin/feat/<blocker>-<slug>
    ```
 
    Verify the project builds and existing tests pass BEFORE changing
@@ -150,6 +164,8 @@ laptop the code was written on:
    ```bash
    git push -u origin <branch>
    gh pr create --title "<type>: <what changed>" --body "..."
+   # stacked on an unmerged blocker: add --base feat/<blocker>-<slug>,
+   # then `gh pr edit --base main` once the blocker merges
    ```
 
    PR body must contain:

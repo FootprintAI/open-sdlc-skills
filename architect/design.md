@@ -115,6 +115,28 @@ or `review` to assess an existing codebase/PR against these principles
      failure paths
    - **Deployment shape** — Dockerfiles, compose topology for local dev,
      how config and secrets enter (env vars, never baked into images)
+   - **Delivery slices** — how the design lands as issues, cut so the
+     sprint can run them in parallel instead of as one serial chain:
+     - **Contract first.** The first slice of any boundary is the
+       contract alone: the `.proto`/schema/interface, its generated
+       clients, and a stub behind it — nothing real yet. It is hours of
+       work, merges first, and turns a chain `A → B → C` into
+       `A₀ → {A, B, C}`: every dependent then builds against the
+       generated client or a mock at the seam rather than waiting on the
+       real implementation
+     - **Vertical slices over layers.** The first slice through a flow is
+       a walking skeleton — the thinnest end-to-end path, hardcoded where
+       Phase 1 allows — and later slices widen it. Splitting by layer
+       (schema → service → UI) manufactures a dependency chain; splitting
+       by slice mostly doesn't
+     - **Name the chain that remains.** Where slices genuinely must land
+       in order, write the chain down (`slice 1 → slice 3 → slice 4`) with
+       why each edge is real. A chain longer than three links is a
+       layered split in disguise — recut it. Never collapse a chain into
+       one big issue: that hides the critical path instead of managing
+       it, and yields one unreviewable PR. The only slices to fold back
+       together are ones that can't state their own acceptance criterion
+       or ship their own green PR — those were never real slices
 
    Keep it as simple as the requirements allow: prefer a modular monolith
    over microservices until scale demands otherwise; prefer boring
@@ -167,6 +189,11 @@ or `review` to assess an existing codebase/PR against these principles
    ## Test strategy
    <per component, as designed in step 3>
 
+   ## Delivery slices
+   <ordered list, one future issue each, with its acceptance criterion;
+   contract-first slices marked as such; then the dependency chain that
+   remains (`slice 1 → slice 3`) and why each edge is real>
+
    ## Deviations from the default stack
    <each deviation + justification + containment boundary, or "none">
 
@@ -197,9 +224,10 @@ or `review` to assess an existing codebase/PR against these principles
    > "Design written to `docs/architecture/<topic>.md`: N components
    > (Go: X, Python: Y, TypeScript: Z), M typed contracts generated from
    > K protos, test strategy and CI type gate per component.
+   > Delivery: S slices, longest chain <a → b → c> (or none).
    > Deviations from default stack: <list or none>.
-   > Next: turn components into issues with `/pm:sprint-delivery` —
-   > flow-critical components are Phase 1."
+   > Next: turn the slices into issues with `/pm:sprint-delivery` —
+   > flow-critical slices are Phase 1, contract slices go first."
 
 **Guardrails**
 
@@ -215,6 +243,11 @@ or `review` to assess an existing codebase/PR against these principles
   it best" is not a reason a future on-call engineer can use
 - No component enters the design without its test strategy — "we'll add
   tests later" is not a design
+- Never hand the PM a design whose only implementation path is one
+  serial chain — cut the contract out first so the rest can run in
+  parallel, and never fix a chain by merging its links into one big
+  issue; a slice that can't ship its own green PR is recut, not
+  absorbed
 - Do not implement the system — this skill designs and documents;
   implementation follows the doc as separate work
 - Design to the requirements given, not to imagined scale — the simplest

@@ -109,8 +109,10 @@ underpowered.
    - A healthy cycle scope is roughly 3–7 Phase 1 issues. Creating or
      scoping more than ~5 issues in one invocation is a bulk change —
      present the proposed scope to the user for confirmation first
-   - An issue is scope-eligible only when it is **ready**: not blocked,
-     actionable (acceptance criteria or a repro path — comment asking for
+   - An issue is scope-eligible only when it is **ready**: not blocked
+     (a `Blocked by` whose PR is merged or at least open counts as ready
+     — the engineer stage stacks on an open one; a blocker with no PR
+     does not), actionable (acceptance criteria or a repro path — comment asking for
      criteria instead of guessing), not already in progress, and an
      engineering task rather than an open product/design question. "Not
      already in progress" is now concrete, not a guess: an issue with an
@@ -159,6 +161,24 @@ underpowered.
 
    - Independent scoped issues may run in parallel (that is what the
      worktrees are for), still capped at `--max`
+   - The umbrella's **critical path** runs serially under one agent —
+     the next link is started by the same agent instance once the
+     previous link's PR is open, never fanned out link-by-link to
+     parallel agents (each hand-off is a wait the sprint can't afford)
+     and never collapsed into one issue. Route the chain's links one tier
+     above what the rubric alone would give: a stall on the chain stalls
+     the whole sprint, a stall elsewhere does not
+   - **Stack on an unmerged blocker instead of idling.** When link B
+     needs link A's code and A's PR is open but not merged, B's worktree
+     branches off `feat/A`, not `main`, and B's PR targets `feat/A`;
+     retarget it to `main` once A merges (`gh pr edit <B> --base main`):
+
+     ```bash
+     git worktree add ../<repo>-issue-<B> -b feat/<B>-<slug> feat/<A>-<slug>
+     ```
+
+     Wait for `main` only when A has no PR yet — then B is not ready, and
+     the PM stage should not have scoped it
    - Each implementation follows the `/engineer:implement` contract in
      full: **claim the ticket first** (`${who}-${model} is starting
      processing it`, e.g. `agent-7f3a1c-opus`) — `${who}` is this
@@ -320,6 +340,10 @@ answers.
   scoped in one invocation need the user's confirmation
 - Flow first: Phase 2 items are never implemented while unblocked
   Phase 1 items remain open, even if they look quick
+- Chains are scheduled, not merged: the critical path keeps one issue
+  per link, one owner for the whole chain, and stacked branches between
+  links — a long chain is recut contract-first with the architect, never
+  folded into one big issue
 - Escalate, never downgrade: a `model:*` label only moves up while work
   is in flight; re-triaging downward requires the user's say-so
 - All `/pm:sprint-delivery` guardrails bind the PM stage, all

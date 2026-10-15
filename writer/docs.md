@@ -86,6 +86,21 @@ allowed. `Verified` is the commit the page was last checked against;
 | docs/manual/sso.md | * | `web/app/login/**`, `internal/auth/**`, config `SSO_*` | fig-sso-01..02 | — | 🔴 unverified |
 ```
 
+Row `Status` values:
+
+- 🟢 **verified** — sources unchanged since `Verified` *and* every
+  command on the page was run as written (step 6)
+- 🟡 **statically verified** — sources unchanged, every flag checked
+  against `--help`, every config key, link and image resolved, but one or
+  more commands were **not run** (no environment could host them: a
+  daemon install on a box that can't run the daemon, a credential the
+  writer doesn't have). The audit names exactly which commands were not
+  run; "some commands weren't run" is not a status, a list is
+- 🔴 **stale** (with the issue) or 🔴 **unverified** (no commit on record,
+  or the page couldn't be checked at all)
+- ✎ **editorial** — prose with no code or commands to diff (positioning,
+  comparisons, acknowledgments); checked for links only, never 🟢
+
 `docs/SCREENSHOTS.md` — the screenshot request and manifest in one table,
 so a figure's provenance is never a mystery:
 
@@ -131,6 +146,15 @@ capture (<why>) · 🔴 stale (UI sources changed since `<commit>`).
    - check each config key against `.env.example` / the config struct
    - check each link and image resolves
    Any failure → 🔴 stale, citing the exact command, flag or path.
+
+   When a command **can't be run** (the environment can't host it — a
+   disposable LXC box has no Incus/ZFS for a daemon install; a step needs
+   a credential you don't hold), don't skip it silently and don't call it
+   verified: run everything around it, then mark the section 🟡 and list
+   the commands not run, each with why. Run the rest of the page in the
+   environment that *can* (a client-only install on a fresh box is a real
+   execution of the client half) and record what was run as dated evidence
+   against the released version, not a local build.
 
 3. **Surface coverage (deterministic).** Enumerate the product's
    user-facing surfaces and look for ones no DOCMAP row claims:
@@ -186,8 +210,9 @@ capture (<why>) · 🔴 stale (UI sources changed since `<commit>`).
    | docs/manual/upload.md | 🔴 stale | `internal/ingest/parser.go`, `web/app/upload/page.tsx` changed since `a1b2c3d` (PR #77: "parse multi-page PDFs"); fig-upload-03 UI sources changed |
    | README.md › Quickstart | 🔴 stale | `make run` exits 2: target renamed to `make dev` |
    | docs/manual/sso.md | 🔴 unverified | no verified commit on record |
+   | README.md › Install | 🟡 statically verified | flags, links, env vars check out on `a1b2c3d`; **not run:** `make install` (needs root + a systemd host), `systemctl is-active app` (no daemon in a box) |
    | (none) | 🟡 undocumented | route `/settings/webhooks` has no doc-map row |
-   | docs/manual/export.md | 🟢 | sources unchanged since `a1b2c3d` |
+   | docs/manual/export.md | 🟢 | sources unchanged since `a1b2c3d`; every command run |
    ```
 
    Post it as a comment on the sprint umbrella when one is open (so it
@@ -271,7 +296,10 @@ capture (<why>) · 🔴 stale (UI sources changed since `<commit>`).
    On a fresh box or the deployed environment, follow the page top to
    bottom exactly as written: run each command, click each step, compare
    each figure to what's on screen. Fix the page where it diverges. Then
-   set the DOCMAP row 🟢 with `Verified = <commit>`.
+   set the DOCMAP row with `Verified = <commit>`: 🟢 if every command ran,
+   🟡 if some couldn't (listing which, per step 2's **can't be run** rule)
+   — the PR body states which, so a reviewer sees the gap instead of
+   inferring it from a green dot.
 
 7. **Open the PR**
 
@@ -288,8 +316,9 @@ capture (<why>) · 🔴 stale (UI sources changed since `<commit>`).
 
 8. **Report**
 
-   > "Docs audit against `<commit>`: N pages 🟢, M 🔴 stale (issues
-   > #a, #b), K 🟡 undocumented surfaces (#c). Worked #a: `docs/manual/
+   > "Docs audit against `<commit>`: N pages 🟢, J 🟡 statically
+   > verified (not run: <commands>), M 🔴 stale (issues #a, #b), K 🟡
+   > undocumented surfaces (#c). Worked #a: `docs/manual/
    > upload.md` rewritten, 3 figures re-shot by `/qa-e2e-test` (run
    > `<id>`), PR #p verified against `<commit>`. Blocked: fig-sso-01 —
    > SSO flow fails on dev, filed #d."
@@ -308,7 +337,8 @@ a new user.
 
 - Never mark a page 🟢 without a commit it was verified against and the
   evidence from step 6 — a doc that *reads* right is not a doc that *is*
-  right
+  right. If any command wasn't run, the ceiling is 🟡, with the list of
+  what wasn't run
 - Never take, edit, crop, or mock a screenshot in this role — every figure
   comes through `docs/SCREENSHOTS.md` from a `/qa-e2e-test` run against a
   named commit, with QA's fixture and cleanup rules intact
@@ -324,6 +354,8 @@ a new user.
 - Stay out of `docs/architecture/`, `docs/product/`, release notes, and
   the code — a wrong doc is fixed in the doc, a wrong product is an issue
   for the engineer
-- Report the audit honestly: a page you couldn't verify (environment
-  down, command needs credentials you don't have) is 🔴 unverified with
-  the reason, never 🟢 by default
+- Report the audit honestly: a page you couldn't check *at all*
+  (environment down, repo unreadable) is 🔴 unverified with the reason;
+  a page where only some commands couldn't run is 🟡 with those commands
+  named. Neither is ever 🟢 by default, and 🟡 is never a softer word for
+  "didn't look"

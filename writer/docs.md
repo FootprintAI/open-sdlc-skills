@@ -32,8 +32,9 @@ a real deployed commit — and it does not decide what ships.
   without changing them
 
 Optionally `--env dev` (which deployed environment screenshots and
-verification run against; defaults to the sprint umbrella's deploy record)
-and `--repo owner/name`.
+verification run against; defaults to the sprint umbrella's deploy record),
+`--repo owner/name`, and `--gaps owner/repo[:path]` (the private register
+that holds gap detail for a public repo — see **Where gap detail lives**).
 
 **Principles**
 
@@ -95,11 +96,59 @@ Row `Status` values:
   more commands were **not run** (no environment could host them: a
   daemon install on a box that can't run the daemon, a credential the
   writer doesn't have). The audit names exactly which commands were not
-  run; "some commands weren't run" is not a status, a list is
+  run — in the gap register, not in the row; "some commands weren't run"
+  is not a status, a list is
 - 🔴 **stale** (with the issue) or 🔴 **unverified** (no commit on record,
   or the page couldn't be checked at all)
 - ✎ **editorial** — prose with no code or commands to diff (positioning,
   comparisons, acknowledgments); checked for links only, never 🟢
+
+**Where gap detail lives — a public repo keeps it out**
+
+Two kinds of record come out of an audit, and they have different
+audiences:
+
+- **The public record** — `docs/DOCMAP.md`, `docs/SCREENSHOTS.md`, `docs`
+  issues, PR bodies and comments: what each page covers, its sources, the
+  commit it was verified on, its status, what was fixed, and run evidence
+  of what *passed*.
+- **Gap detail** — what has *not* been proven or covered, and what needs
+  deciding: the commands not run and why, surfaces with no page, what an
+  environment could and couldn't host, environment or network behavior
+  discovered while verifying, and any owner decision or planned page that
+  reads as a roadmap.
+
+On a public repo, gap detail never goes in the public record. A list of
+what is untested and undocumented is a map of where the docs can't be
+trusted, and it stays in git history after it is deleted — the same
+reasoning as `_shared/labels.md`: when unsure whether a repo is public,
+treat it as public.
+
+- **Visibility test:** `gh repo view --json visibility -q .visibility`
+  (or the GitLab equivalent). `PRIVATE` / `INTERNAL` → gap detail may live
+  in the repo, at `docs/GAPS.md`. `PUBLIC` or anything you can't
+  determine → public rules.
+- **Register location, in order:** `--gaps owner/repo[:path]`; the
+  `WRITER_DOCS_GAPS` environment variable; otherwise **ask the user once**,
+  proposing a private repo they already own (a roadmap or planning
+  directory is the natural home). The choice is never recorded in the
+  public repo — naming the private repo in a public file is itself a
+  leak — so tell the user to pass `--gaps` or set the variable to make it
+  durable.
+- **No register available** (not given, can't ask, no access): do **not**
+  fall back to the public repo. Put the gap detail in the report to the
+  user only, say plainly it was not saved anywhere, and leave the DOCMAP
+  at statuses.
+- **The register** is one file per product repo, written as a branch and
+  PR in the register repo (from a worktree — never the user's working
+  checkout, never straight to its default branch): a header with `Status`
+  and `Updated` (absolute dates), then **Verification gaps** (section · not
+  run · why · what closes it), **Surfaces with no page** (verb/route ·
+  flow · note), and **Decisions** an owner has to make; each entry cites
+  the commit audited. Re-derive it from the next audit and edit it in
+  place; delete an entry when its gap closes. Where the register's own
+  convention is a forward plan (dated phases, quarter files), write it as
+  one — the gaps are the work items.
 
 `docs/SCREENSHOTS.md` — the screenshot request and manifest in one table,
 so a figure's provenance is never a mystery:
@@ -151,10 +200,13 @@ capture (<why>) · 🔴 stale (UI sources changed since `<commit>`).
    disposable LXC box has no Incus/ZFS for a daemon install; a step needs
    a credential you don't hold), don't skip it silently and don't call it
    verified: run everything around it, then mark the section 🟡 and list
-   the commands not run, each with why. Run the rest of the page in the
-   environment that *can* (a client-only install on a fresh box is a real
-   execution of the client half) and record what was run as dated evidence
-   against the released version, not a local build.
+   the commands not run, each with why, in the gap register (see **Where
+   gap detail lives** — the DOCMAP row carries only the 🟡). Run the rest
+   of the page in the environment that *can* (a client-only install on a
+   fresh box is a real execution of the client half) and record what was
+   run as dated evidence against the released version, not a local build;
+   evidence of what *passed* is public, what the environment couldn't do
+   is gap detail.
 
 3. **Surface coverage (deterministic).** Enumerate the product's
    user-facing surfaces and look for ones no DOCMAP row claims:
@@ -215,9 +267,14 @@ capture (<why>) · 🔴 stale (UI sources changed since `<commit>`).
    | docs/manual/export.md | 🟢 | sources unchanged since `a1b2c3d`; every command run |
    ```
 
-   Post it as a comment on the sprint umbrella when one is open (so it
-   shows up in `/coordinator-status` and the scrum master's standup);
-   otherwise keep it in the audit's `docs` issue.
+   On a **public repo** the two 🟡 rows above are gap detail: they go to
+   the register, in full. The public audit report keeps the 🟢 and 🔴
+   rows (stale evidence — a changed file, a failing command — is a bug
+   report, and belongs in the open) and says only how many sections are 🟡.
+
+   Post the public report as a comment on the sprint umbrella when one is
+   open (so it shows up in `/coordinator-status` and the scrum master's
+   standup); otherwise keep it in the audit's `docs` issue.
 
 3. **File one `docs` issue per stale page** (bulk guardrail: >5 → confirm
    with the user first)
@@ -236,8 +293,11 @@ capture (<why>) · 🔴 stale (UI sources changed since `<commit>`).
    - `docs/DOCMAP.md` row verified = `<commit>`, status 🟢
 
    Dedupe first: an open `docs` issue for the same page gets a comment
-   with the new evidence, not a sibling. Undocumented surfaces get one
-   issue per page-to-be, not one per route.
+   with the new evidence, not a sibling. On a private repo, undocumented
+   surfaces get one issue per page-to-be, not one per route. On a public
+   repo they are **not filed** — a public "add a manual page for X" issue
+   is a public roadmap item — they go in the register, and the owner
+   promotes an entry to an issue once it is committed work.
 
    In `audit` mode, stop here and report.
 
@@ -297,9 +357,11 @@ capture (<why>) · 🔴 stale (UI sources changed since `<commit>`).
    bottom exactly as written: run each command, click each step, compare
    each figure to what's on screen. Fix the page where it diverges. Then
    set the DOCMAP row with `Verified = <commit>`: 🟢 if every command ran,
-   🟡 if some couldn't (listing which, per step 2's **can't be run** rule)
-   — the PR body states which, so a reviewer sees the gap instead of
-   inferring it from a green dot.
+   🟡 if some couldn't (listing which in the gap register, per step 2's
+   **can't be run** rule). On a private repo the PR body states which, so
+   a reviewer sees the gap instead of inferring it from a green dot; on a
+   public repo the PR body says only that the section is 🟡 and the list
+   goes to the register.
 
 7. **Open the PR**
 
@@ -323,6 +385,10 @@ capture (<why>) · 🔴 stale (UI sources changed since `<commit>`).
    > `<id>`), PR #p verified against `<commit>`. Blocked: fig-sso-01 —
    > SSO flow fails on dev, filed #d."
 
+   This report goes to the user, so it carries the full picture — but it
+   is not pasted into public artifacts; on a public repo its gap detail is
+   in the register (say where, and that the register PR is open).
+
 **Review mode (`review`)**
 
 Critique without changing: pages with no DOCMAP row, claims with no
@@ -338,7 +404,7 @@ a new user.
 - Never mark a page 🟢 without a commit it was verified against and the
   evidence from step 6 — a doc that *reads* right is not a doc that *is*
   right. If any command wasn't run, the ceiling is 🟡, with the list of
-  what wasn't run
+  what wasn't run in the gap register
 - Never take, edit, crop, or mock a screenshot in this role — every figure
   comes through `docs/SCREENSHOTS.md` from a `/qa-e2e-test` run against a
   named commit, with QA's fixture and cleanup rules intact
@@ -357,5 +423,11 @@ a new user.
 - Report the audit honestly: a page you couldn't check *at all*
   (environment down, repo unreadable) is 🔴 unverified with the reason;
   a page where only some commands couldn't run is 🟡 with those commands
-  named. Neither is ever 🟢 by default, and 🟡 is never a softer word for
-  "didn't look"
+  named in the register. Neither is ever 🟢 by default, and 🟡 is never a
+  softer word for "didn't look"
+- Never write gap detail — commands not run, surfaces with no page,
+  environment findings, planned pages, owner decisions — into a public
+  repo's files, issues, PR bodies or comments, and never name the private
+  register repo in a public artifact. Unknown visibility is public. With
+  no register available, the detail goes to the user's report and is
+  stated as unsaved, not parked in the public repo

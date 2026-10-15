@@ -42,6 +42,17 @@ authored — flag it for a human instead.
 6. **Stack conformance** — new dependencies justified in the PR body,
    no new languages/frameworks smuggled in, Tailwind rather than ad-hoc
    CSS, secrets/credentials absent from the diff and fixtures
+7. **Docs impact** — does the diff change a user-facing surface (a
+   route/page, a CLI flag or subcommand, a public endpoint's `google.api.http`
+   rule, a config key or env var, a command the README shows)? Then the
+   review states what changed in one line (`Docs impact: upload page now
+   accepts multi-page PDFs; README quickstart command renamed`) so
+   `/writer-docs audit` can find it later, and the PR either updates the
+   page(s) `docs/DOCMAP.md` ties to those sources or links a `docs` issue
+   for it. Missing both is a [should], not blocking — but `Docs impact:
+   none` on a diff that renames a flag is a wrong claim, and a wrong
+   claim is [blocking] like any other — the writer's audit trusts that
+   line
 
 Style nits belong to linters, not reviews — mention them once collectively
 at most, never as individual comments.
@@ -97,6 +108,8 @@ at most, never as individual comments.
    **Acceptance criteria:** N/M covered by tests (missing: <which>)
    **Deferred to verification:** <criteria the batched pass will check on
    dev, and whether the steps are runnable — or "none">
+   **Docs impact:** <user-facing surface changed, and the page/issue that
+   covers it — or "none">
    
 
    ### Blocking

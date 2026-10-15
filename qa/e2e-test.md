@@ -15,7 +15,8 @@ Edge cases are explicitly out of scope: success paths only.
 **Input**: Optionally specify flows to test (e.g., `/qa-e2e-test login,upload`)
 or a base URL of an already-running instance (e.g.,
 `/qa-e2e-test http://localhost:3000`). If omitted, discover flows and launch the
-app yourself.
+app yourself. With `--for-docs docs/SCREENSHOTS.md`, also capture the
+figures the technical writer requested (see below).
 
 **Called from a sprint verification pass**: when `/qa-sprint-verify` hands
 this skill a deployed URL and a set of flows, they are the sprint's UI
@@ -24,6 +25,26 @@ commit** — not one run per issue. Record the commit in the report header
 alongside the URL, skip the "launch the app" step entirely (the environment
 is already the thing under test), and never redeploy or restart it. Its
 test-data cleanup rules (step 6) still apply to everything the run creates.
+
+**Called from the technical writer (`--for-docs <manifest>`)**: when
+`/writer-docs` hands this skill a screenshot manifest
+(`docs/SCREENSHOTS.md`), the ⏳ requested rows are figures the user manual
+will embed. Run the flows they name as one happy-path session against the
+given URL (or a fresh box per **Test environment** below), and for each row
+capture the frame **only once its "Must show" condition is visibly on
+screen** — the condition is the assertion; a frame that doesn't show it is
+⚠️ with the reason, never a best-effort substitute. Use the row's viewport
+(default 1440×900, light theme), write the file to the path the row names
+under `docs/manual/images/` (`<page>-<nn>.png`), and fill the row's `File`,
+`Commit` (the deployed commit, from the environment's own version
+endpoint) and `Status` (✅ / ⚠️). Doc frames are the one place where
+fixture content is *visible to end users*, so fixtures here carry
+plausible, obviously-synthetic names (`Ada Example`, `sample-invoice.pdf`,
+`acme-demo`) and never a real person, tenant, email, token or URL — flag
+and skip any flow whose only available data looks real. The run's own
+screenshots and report are still written as usual, and its cleanup rules
+(step 6) still apply to everything it created; the only extra artifact is
+the filled manifest.
 
 **Applies to**: Web/UI projects only (SPA, SSR app, static site, dashboard,
 Electron renderer, etc.). If the project has no UI surface, stop and tell the
@@ -243,6 +264,11 @@ under test runs in a clean, disposable environment:
   truncate tables, never touch pre-existing data. If you cannot tell whether
   an entity came from this run, leave it and report it as residual
 - Do not modify the application source code; only add files under `e2e/`
+  — plus, on a `--for-docs` run, the figures and manifest rows the writer
+  requested under `docs/`
+- A doc figure is captured only when its "Must show" condition is on
+  screen, from synthetic fixture data; never hand a frame with real-looking
+  data or a missing condition to the manual as ✅
 - Report results faithfully — a failed or skipped flow is reported as such,
   with the failing screenshot attached
 - Run against a locally launched instance or a URL the user provided — never

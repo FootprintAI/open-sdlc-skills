@@ -357,6 +357,18 @@ underpowered.
    - **Empty queue** (nothing needed a deployed environment this cycle):
      say so on the umbrella and move on — an empty queue is a legitimate
      result, an unchecked one is not
+   - **Docs on the same commit.** While the environment is up on a known
+     version, run `/writer-docs audit --env dev`: it diffs every manual
+     page's sources since the commit it was last verified on, re-runs the
+     README's commands, and sweeps this cycle's merged PRs for `Docs
+     impact:` lines. Stale pages become `docs` issues; those caused by
+     *this cycle's* merged work are cycle scope (route them per step 2,
+     work them through step 3 — the writer requests its screenshots from
+     `/qa-e2e-test` against this same deployed commit, so figures and
+     verification results carry one version). Stale pages from older
+     drift carry to the next cycle with the audit as evidence. The
+     environment is not torn down until the writer's screenshot requests
+     for this cycle's pages are ✅ or ⚠️
    - **Per-pass environment**: if step 6 provisioned the environment for
      this pass (its deploy comment says so), the pass is what releases
      it — once `/qa-sprint-verify` reports the results posted and every

@@ -2,7 +2,8 @@
 
 A software team as [Claude Code agent skills](https://docs.claude.com/en/docs/claude-code)
 — Product Manager, Software Architect, Project Manager, Scrum Master,
-Software Engineer, QA Tester, Code Reviewer, DevOps, and Release Manager.
+Software Engineer, QA Tester, Code Reviewer, Technical Writer, DevOps, and
+Release Manager.
 
 Each skill is one role with its own principles, deliverables, and
 guardrails. Together they cover the whole software delivery lifecycle —
@@ -43,7 +44,8 @@ deploy and environment skills assume Containarium.
 | **QA Tester** | [`/qa-e2e-test`](qa/e2e-test.md) | Happy-path e2e run of a web/UI project with **a screenshot at every step as proof of execution**. Requests sample data (PDF/image/etc.) up front, cleans up test data afterward via the app's own API or UI, and writes a flow-by-flow report to `e2e/E2E-REPORT.md`. |
 | **QA Tester** | [`/qa-sprint-verify`](qa/sprint-verify.md) | The sprint's **batched verification pass**: the issues CI can't prove done wait on the umbrella's verification queue and are all checked against **one deployed commit**, right after the sprint deploys — never one issue at a time, because a dev environment redeployed per issue is a dev environment nobody can name a version for. Every result is stamped with the commit it was verified on; failures go straight to `/qa-issue-report`. |
 | **QA Tester** | [`/qa-issue-report`](qa/issue-report.md) | Files every defect found as a GitHub issue — one issue per finding, created *before* any fix is discussed. UI findings are verified live in a browser first (fresh defect screenshot + console errors), every issue records the app version/commit it was seen on, dedupes against existing issues, and cross-links related issues in both directions. |
-| **Code Reviewer** | [`/reviewer-pr`](reviewer/pr.md) | Reviews a PR against the team contract: acceptance criteria covered by tests (verified by *running* them), no weakened tests, proto-as-source-of-truth, typed boundaries, scope matching the issue. Verdict posted on the PR page. |
+| **Code Reviewer** | [`/reviewer-pr`](reviewer/pr.md) | Reviews a PR against the team contract: acceptance criteria covered by tests (verified by *running* them), no weakened tests, proto-as-source-of-truth, typed boundaries, scope matching the issue, and a one-line **docs impact** statement for any user-facing surface the diff changes. Verdict posted on the PR page. |
+| **Technical Writer** | [`/writer-docs`](writer/docs.md) | Keeps the README and user manual **true to the shipped commit**. Detects stale docs with evidence rather than instinct: `docs/DOCMAP.md` ties every page to the source paths, routes, commands and figures it describes and the commit it was last verified on, so an audit is a `git diff` of those sources, a re-run of every documented command, a sweep for undocumented routes/flags, and the reviewers' `Docs impact:` lines. Files one `docs` issue per stale page, rewrites from the code (not the old text), and **requests screenshots from `/qa-e2e-test`** via `docs/SCREENSHOTS.md` — each figure captured against a named commit with synthetic data — never hand-made. |
 | **DevOps** | [`/devops-deploy`](devops/deploy.md) | Deploys git-natively **on Containarium**: commit, push/sync, converge the container to exactly that commit, verify health on the real route, then open the batched verification window on the sprint umbrella. Dev before prod; prod is confirmation-gated with a backup. Per-pass `verify-*` containers are deleted only after the results are posted. |
 | **DevOps** | [`/devops-containarium-env`](devops/containarium-env.md) | Sets up and *proves* the agent's own runtime — control-plane MCP, CLI and ssh path, build-credential path, committed dev config, permission rules — with a command per capability, so deploy and verification run unattended instead of handing steps back to a human. Credential steps stay with the human. |
 | **Release Manager** | [`/release-cut`](release/cut.md) | Cuts a real release once work has shipped and been dev-verified: infers the semver bump and drafts categorized notes from PRs merged since the last tag, tags the codebase and GitHub at the same commit, publishes the GitHub Release, and triggers the release image build. Confirmation-gated; never moves or force-pushes a tag. |
@@ -80,6 +82,7 @@ evidence — and **cycles iterate**: when one closes,
 /qa-sprint-verify      check the batch          → one pass, one commit, queue cleared
 /qa-e2e-test           prove it works           → screenshots + e2e report
 /qa-issue-report       file what broke          → one GitHub issue per defect
+/writer-docs           is the manual still true? → stale-doc audit, docs issues, pages + QA figures
       ↓
 /release-cut           cut it                   → semver tag + GitHub Release
       ↺
@@ -108,8 +111,9 @@ check:
 | The product works | `/qa-e2e-test` | A screenshot per step, in a report, against a deployed URL |
 | Deployed-only behavior is checked | `/qa-sprint-verify` | One batched pass per deployed commit, every result naming that commit |
 | Defects are tracked | `/qa-issue-report` | One GitHub issue per finding, deduped and cross-linked |
+| The manual is true | `/writer-docs` | Every page stamped with the commit it was verified on; stale pages found by diffing their sources, re-running their commands, and sweeping reviews' `Docs impact:` lines |
 
-The recurring rule across all six: **claims don't pass gates, artifacts
+The recurring rule across all seven: **claims don't pass gates, artifacts
 do.** A skill that cannot produce the evidence reports the gate as *not
 passed* rather than asserting success.
 
@@ -190,6 +194,11 @@ one), and drive one cycle:
 # 8b. File everything QA found as linked GitHub issues (dedupes first)
 /qa-issue-report e2e/E2E-REPORT.md
 
+# 8c. Is the manual still true on that commit? Audit, then fix a page
+#     (the writer asks /qa-e2e-test for the screenshots it needs)
+/writer-docs audit --env dev
+/writer-docs #31
+
 # 9. Cut the release — semver tag + GitHub Release
 /release-cut
 
@@ -246,6 +255,14 @@ Or hand the middle of the cycle to the automation:
   moves on — the loop never stalls on a human and never answers for one.
   Unanswered past two days, `/scrum-master` escalates it as a missing
   decision; past five, it's a scope call.
+- **Stale docs are detected, not noticed.** `/writer-docs` keeps a
+  `docs/DOCMAP.md` naming, per page, the source paths, routes, commands
+  and figures it describes and the commit it was last verified on. An
+  audit diffs those sources since that commit, re-runs every documented
+  command in a fresh box, lists routes and flags no page covers, and reads
+  the `Docs impact:` line every `/reviewer-pr` review carries. Screenshots
+  are requested through `docs/SCREENSHOTS.md` and taken by `/qa-e2e-test`
+  against the same deployed commit the sprint was verified on.
 - **Skills propose before they act on anything hard to undo** — expect to
   be asked before issues are filed in bulk, scope is cut, or prod is
   touched.

@@ -85,6 +85,27 @@ weekly progress update instead of planning a new sprint.
    Phase 2 items are scheduled only if Phase 1 fits with room to spare,
    otherwise they seed next week's sprint.
 
+   **Dependency chains are scheduled, never merged.** Each link stays its
+   own issue with its `Blocked by` edge — folding a chain into one big
+   issue hides the critical path and produces one unreviewable PR.
+   Instead:
+
+   - Cut along the design doc's delivery slices (`/architect-design`
+     writes them contract-first). If an issue's only dependency is "the
+     interface exists", split that interface out as its own small
+     unblocker issue and put it first — the dependents then run in
+     parallel against the generated client or a stub
+   - The longest chain is the sprint's **critical path**: name it in the
+     umbrella, schedule it first, and give the whole chain one owner — a
+     chain that changes hands at every link pays a hand-off wait per link
+   - Fan everyone else out on the issues that aren't on the chain; slack
+     off the chain is free, slack on it is the sprint slipping
+   - A Phase 1 that is a single chain longer than ~3 links does not fit
+     one week — recut it with the architect or cut scope; don't stretch
+   - Fold two issues back together only when one of them cannot state its
+     own acceptance criterion or ship its own green PR — that was never a
+     real split
+
 3. **Create or update the child issues**
 
    Every task in the sprint gets its own GitHub issue (reuse existing issues
@@ -180,6 +201,9 @@ weekly progress update instead of planning a new sprint.
 
    ## Out of sprint (deferred)
    - #18 <title> — <why deferred>
+
+   ## Critical path
+   #12 → #14 — owner @assignee; everything else runs in parallel around it
 
    ## Verification queue — batched, one deployed version at a time
 
@@ -281,6 +305,7 @@ weekly progress update instead of planning a new sprint.
      **Done:** #12, #14
      **In progress:** #15 (@assignee, PR #20 in review)
      **Blocked:** #16 — waiting on <what>; needs <who/decision>
+     **Critical path:** #12 merged, #14 in review — on schedule | slipping <by how much, and what unblocks it>
      **Flow status:** <does the end-to-end flow work yet? demo link if yes>
      **Verification:** 2 ✅ on `abc1234` (dev), 1 ❌ (#19 → defect #31),
      2 ⏳ awaiting the next deploy (#23, #24)
@@ -349,5 +374,8 @@ weekly progress update instead of planning a new sprint.
   explicit ⏭ with a name on it
 - Keep sprints one week; if the plan doesn't fit, cut scope rather than
   stretch the week
+- Chains are scheduled, not merged: dependent tasks keep their own issues
+  and `Blocked by` edges, the critical path is named and owned, and the
+  fix for a long chain is a contract-first recut, never one big issue
 - This skill coordinates and reports — it does not implement tasks, merge
   PRs, or assign people without being told who is available

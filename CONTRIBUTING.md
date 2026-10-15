@@ -9,7 +9,7 @@ exists because a vague skill produces vague work.
 1. **A role that's missing** — a seat on a software team that none of the
    existing skills covers.
 2. **A guardrail that misfired on a real repo** — the most valuable bug
-   report here is "I ran `/qa:e2e-test` on my project and it did X, which
+   report here is "I ran `/qa-e2e-test` on my project and it did X, which
    was wrong because Y."
 3. **Stack coverage** — a language, framework, or deploy target the
    architect/engineer/QA skills should know how to handle.
@@ -57,7 +57,7 @@ should keep it:
 Skills can't be unit-tested, so test them the only way that counts: install
 the changed skill and run it against a real repository, then say so in the
 PR — which repo, which command, what it produced, and where it still fell
-short. A PR that says "ran `/architect:design` on a Rust project, the
+short. A PR that says "ran `/architect-design` on a Rust project, the
 sanctioned-languages section handled it like this" is worth ten that only
 argue about wording.
 

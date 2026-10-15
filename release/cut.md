@@ -1,9 +1,11 @@
 ---
 name: "Release Manager: Cut Release"
-description: Act as a release manager who cuts a real release once a body of work has shipped and been verified — infers the semver bump and drafts release notes from PRs merged since the last tag, tags the codebase AND GitHub at the same commit, publishes the GitHub Release, and triggers (or confirms) the release image build workflow. Publishing gate by default; pairs with /team:sprint-cycle as its closing stage.
+description: Act as a release manager who cuts a real release once a body of work has shipped and been verified — infers the semver bump and drafts release notes from PRs merged since the last tag, tags the codebase AND GitHub at the same commit, publishes the GitHub Release, and triggers (or confirms) the release image build workflow. Publishing gate by default; pairs with /team-sprint-cycle as its closing stage.
 category: Release
 tags: [release, tag, semver, github-release, ci, image-build, devops]
 ---
+
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
 
 Act as a **release manager**. Unlike a release-candidate tracking issue,
 this skill performs the actual cut: a semver-bumped tag pushed to both the
@@ -12,15 +14,15 @@ release image build workflow triggered from that tag. A release is cut
 only once work has genuinely shipped and been verified — never
 speculative, never mid-cycle.
 
-**Input**: Run bare (`/release:cut`) to cut a release from everything
+**Input**: Run bare (`/release-cut`) to cut a release from everything
 merged to `main` since the last tag. Optionally pin a commit
-(`/release:cut <sha>`), force the bump level (`--major` / `--minor` /
+(`/release-cut <sha>`), force the bump level (`--major` / `--minor` /
 `--patch`), or `--auto` to skip the publish confirmation (only when the
 user has explicitly pre-authorized unattended cuts — e.g. as the closing
-stage of a `/loop`-driven `/team:sprint-cycle`). Optionally
+stage of a `/loop`-driven `/team-sprint-cycle`). Optionally
 `--repo owner/name`.
 
-**When this runs**: as the closing stage of `/team:sprint-cycle`, invoked
+**When this runs**: as the closing stage of `/team-sprint-cycle`, invoked
 once the PM has closed the cycle and DevOps's dev release for that commit
 is verified — never before. Standalone invocation for ad hoc releases is
 also fine, subject to the same preconditions.
@@ -31,8 +33,11 @@ also fine, subject to the same preconditions.
   already pushed, and green (CI passing, or tests pass locally if there's
   no CI)
 - If invoked from a sprint cycle: the cycle's umbrella issue is closed (or
-  the user explicitly says release early), and its DevOps stage posted a
-  verified dev release for this exact commit
+  the user explicitly says release early), its DevOps stage posted a
+  verified dev release for this exact commit, and the umbrella's
+  verification queue is clear against that commit — every row ✅ (naming
+  it), ❌ with a filed defect and a decision, or ⏭ waived by the user.
+  Rows still ⏳/🔍 mean the release would carry unchecked work
 - No open `blocker`-severity issue that the release notes would need to
   silently omit — if one exists, surface it and ask whether to release
   anyway or wait
@@ -102,7 +107,7 @@ also fine, subject to the same preconditions.
    it after a build already ran doesn't undo that build or anything it
    published downstream) — so by default it waits for a yes. In `--auto`
    mode (pre-authorized, e.g. wired as the automatic closing stage of a
-   `/loop`-driven `/team:sprint-cycle`) skip the pause, but still record
+   `/loop`-driven `/team-sprint-cycle`) skip the pause, but still record
    the version and rationale in the release body so the decision is
    auditable after the fact.
 
@@ -140,7 +145,7 @@ also fine, subject to the same preconditions.
    > published (`<url>`), release-build workflow `<name>` run #<id>
    > `<passed|failed>`. Notes: N Added, M Fixed. Full diff: `<link>`."
 
-   If invoked from `/team:sprint-cycle`, also comment this summary on the
+   If invoked from `/team-sprint-cycle`, also comment this summary on the
    cycle's umbrella issue — the release is the cycle's final proof.
 
 **Guardrails**
@@ -164,6 +169,6 @@ also fine, subject to the same preconditions.
 - A failed image build is reported as a failed release, not a partial
   success — the tag existing is not the same as the release being usable
 - This skill cuts releases; it does not decide what ships (that's sprint
-  scope), write code (`/engineer:implement`), or deploy to any running
-  environment (`/devops:deploy`) — its job starts once work is already
+  scope), write code (`/engineer-implement`), or deploy to any running
+  environment (`/devops-deploy`) — its job starts once work is already
   merged and dev-verified

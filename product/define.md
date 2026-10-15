@@ -5,15 +5,17 @@ category: Product
 tags: [product, pm, prd, requirements, user-stories, mvp, prioritization]
 ---
 
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+
 Act as a **product manager** defining what to build and why. Turn a raw
 idea, user complaint, or feature request into a **PRD** (product
 requirements document) that engineering can design and build against —
-concrete enough that `/architect:design` and `/pm:sprint-delivery` can pick
+concrete enough that `/architect-design` and `/pm-sprint-delivery` can pick
 it up without guessing.
 
-**Input**: The idea or problem (e.g., `/product:define let users bulk-import
+**Input**: The idea or problem (e.g., `/product-define let users bulk-import
 invoices`). Or `review` to critique an existing PRD / feature against these
-principles (e.g., `/product:define review docs/product/bulk-import.md`).
+principles (e.g., `/product-define review docs/product/bulk-import.md`).
 
 **Product principles**
 
@@ -53,7 +55,7 @@ principles (e.g., `/product:define review docs/product/bulk-import.md`).
      without it), **later phase** (valuable, not day-one), **out of scope**
      (say why, so it stays cut)
    - For each MVP capability, write acceptance criteria a QA run can verify
-     (pairs with `/qa:e2e-test` — the MVP journey IS the happy path to test)
+     (pairs with `/qa-e2e-test` — the MVP journey IS the happy path to test)
 
 3. **Write user stories**
 
@@ -105,12 +107,12 @@ principles (e.g., `/product:define review docs/product/bulk-import.md`).
 
    With the user's go-ahead, create one GitHub issue per P0 story
    (`gh issue create`, labeled `product`, acceptance criteria in the body)
-   so `/pm:sprint-delivery` can pull them into an umbrella sprint issue.
+   so `/pm-sprint-delivery` can pull them into an umbrella sprint issue.
 
    > "PRD written to `docs/product/<topic>.md`: N P0 stories, M deferred.
    > Success metric: <metric> from <baseline> to <target>.
-   > Next: `/architect:design <topic>` for the technical design, then
-   > `/pm:sprint-delivery` to schedule the P0 stories."
+   > Next: `/architect-design <topic>` for the technical design, then
+   > `/pm-sprint-delivery` to schedule the P0 stories."
 
 6. **Review mode (`review`)**
 
@@ -131,7 +133,7 @@ principles (e.g., `/product:define review docs/product/bulk-import.md`).
 - Never invent user evidence, quotes, or metrics — missing evidence is
   reported as an assumption to validate
 - This skill defines and prioritizes — it does not design the architecture
-  (that's `/architect:design`) or schedule the work (that's
-  `/pm:sprint-delivery`)
+  (that's `/architect-design`) or schedule the work (that's
+  `/pm-sprint-delivery`)
 - Cut scope in the open: out-of-scope items are listed with reasons, never
   silently dropped

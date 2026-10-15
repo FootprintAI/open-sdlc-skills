@@ -5,6 +5,8 @@ category: Project Management
 tags: [coordinator, status, waterfall, stage-gate, lifecycle, iteration, tracking]
 ---
 
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+
 Act as the **project coordinator** — the role that answers "where are we?"
 The team follows a **waterfall model per cycle**: stages run in strict
 order, each stage must pass its exit gate before the next begins, and when
@@ -15,24 +17,27 @@ from the PRD** — waterfall in the small, iterative in the large.
 
 | # | Stage | Role / skill | Exit gate (evidence, not claims) |
 |---|-------|--------------|----------------------------------|
-| 1 | Define | `/product:define` | PRD in `docs/product/` with status `accepted`, P0 stories as GitHub issues |
-| 2 | Design | `/architect:design` | Design doc in `docs/architecture/` with status `accepted`, contracts named |
-| 3 | Plan | `/pm:sprint-delivery` | Sprint umbrella issue open, P0 stories phased and assigned |
-| 4 | Build | `/engineer:implement` | Every Phase 1 child issue has a linked PR |
-| 5 | Review | `/reviewer:pr` | Every PR approved and merged; umbrella checkboxes ticked |
-| 6 | Deploy | `/devops:deploy` | Deployed commit recorded on the umbrella/release issue, health verified |
-| 7 | Prove | `/qa:e2e-test` | `e2e/E2E-REPORT.md` for the deployed flow, screenshots present, flows PASS |
-| 8 | Ship | `/release:cut` | Semver tag on the codebase and GitHub at the same commit, GitHub Release published |
+| 1 | Define | `/product-define` | PRD in `docs/product/` with status `accepted`, P0 stories as GitHub issues |
+| 2 | Design | `/architect-design` | Design doc in `docs/architecture/` with status `accepted`, contracts named |
+| 3 | Plan | `/pm-sprint-delivery` | Sprint umbrella issue open, P0 stories phased and assigned |
+| 4 | Build | `/engineer-implement` | Every Phase 1 child issue has a linked PR |
+| 5 | Review | `/reviewer-pr` | Every PR approved and merged; umbrella checkboxes ticked |
+| 6 | Deploy | `/devops-deploy` | Deployed commit recorded on the umbrella/release issue, health verified, verification queue items in that commit flipped to 🔍 |
+| 7 | Prove | `/qa-sprint-verify` + `/qa-e2e-test` | One batched pass on the deployed commit: every verification-queue row ✅ (with that commit), ❌ with a filed defect, or ⏭ waived; `e2e/E2E-REPORT.md` with screenshots for the UI flows |
+| 8 | Ship | `/release-cut` | Semver tag on the codebase and GitHub at the same commit, GitHub Release published |
 | — | **Cycle close** | coordinator | Gates 1–8 all passed → close cycle, **re-trigger stage 1** for the next PRD |
 
-(`/qa:unit-test` and `/qa:integration-test` back stage 4 rather than gating
+(`/qa-unit-test` and `/qa-integration-test` back stage 4 rather than gating
 a stage of their own — an issue isn't "built" until its tests exist, which
 is what stage 5 verifies.)
 
-**Input**: `/coordinator:status` (default — where are we), or
-`/coordinator:status advance` (check the current gate and hand off to the
-next stage), or `/coordinator:status cycle` (close a completed cycle and
-kick off the next one).
+**Input**: `/coordinator-status` (default — where are we), or
+`/coordinator-status advance` (check the current gate and hand off to the
+next stage), or `/coordinator-status cycle` (close a completed cycle and
+kick off the next one). This skill is one project, deep; for every open
+sprint across the organization at once — which umbrella is active per
+repo, what is waiting on a human, what runs on its own — use
+`/coordinator-sync`, which applies these stage gates per project.
 
 **Steps**
 
@@ -50,7 +55,9 @@ kick off the next one).
 
    The stage is the **first gate that fails**, scanning 1→7. Claims don't
    count — a PRD with `Status: draft` fails gate 1 even if everyone
-   "agrees" on it; an e2e report with no screenshots fails gate 7.
+   "agrees" on it; an e2e report with no screenshots fails gate 7, and so
+   does a verification queue with rows still ⏳/🔍 or a ✅ row that doesn't
+   name the commit it was verified on.
 
 2. **Report the position (mode: status, the default)**
 
@@ -70,7 +77,7 @@ kick off the next one).
    | ...      |    |   |
 
    **Blocked/stalled:** <issues with no activity, PRs waiting on review>
-   **Next action:** /engineer:implement #14
+   **Next action:** /engineer-implement #14
    ```
 
    Post this (or update it) as a comment on the sprint umbrella issue so
@@ -83,7 +90,7 @@ kick off the next one).
      files, query the issues/PRs — as step 1)
    - Gate passes → announce the stage transition on the umbrella issue and
      hand off: name the exact next-skill invocation and what it should
-     consume ("Design accepted → `/pm:sprint-delivery <goal>` pulling
+     consume ("Design accepted → `/pm-sprint-delivery <goal>` pulling
      issues #12–#16")
    - Gate fails → report precisely what's missing; do NOT advance. In
      waterfall, a leaky gate is how phase-5 problems become phase-7
@@ -99,19 +106,19 @@ kick off the next one).
    - Post a **cycle retrospective comment** on the umbrella issue: planned
      vs. shipped, deployed commit, e2e evidence link, what carried over,
      one thing to do differently next cycle
-   - Close the umbrella issue (via `/pm:sprint-delivery close` semantics)
+   - Close the umbrella issue (via `/pm-sprint-delivery close` semantics)
    - **Re-trigger the waterfall**: start the next cycle at stage 1 —
      propose the next PRD's candidate scope from what accumulated during
      this cycle (deferred Phase 2 optimization items, out-of-scope cuts
      from the last PRD, new issues filed since, carry-overs), and hand it
-     to `/product:define`
+     to `/product-define`
    - The next cycle's Phase 1 candidates are, by the team's own principle,
      often the previous cycle's Phase 2: last cycle made the flow work,
      this cycle optimizes it — or a new flow starts
 
    > "Cycle N closed: <goal> shipped @ <commit>, e2e-proven, retro posted
    > on #17. Cycle N+1 candidates: <list>.
-   > Next: `/product:define <next scope>` — the waterfall starts again."
+   > Next: `/product-define <next scope>` — the waterfall starts again."
 
 **Guardrails**
 
@@ -125,7 +132,11 @@ kick off the next one).
 - This role reads, reports, gates, and hands off — it does not write PRDs,
   code, or designs itself; it names which role/skill does
 - Cycle close requires ALL gates including e2e proof — "deployed" without
-  the e2e report is stage 6, not done
+  the verification pass and e2e report is stage 6, not done
+- Gate 7 is one batched pass against one deployed commit. Per-issue
+  verification against a shifting dev environment does not pass the gate,
+  however many issues get individually blessed — the evidence is a pass
+  that names a single commit
 - Status updates and stage transitions are posted on the GitHub umbrella
   issue — coordination that only happened in chat didn't happen
 - When re-triggering the PRD, carried-over and deferred items are proposed

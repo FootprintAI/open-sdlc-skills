@@ -5,14 +5,16 @@ category: Architecture
 tags: [architecture, design, golang, python, typescript, protobuf, grpc-gateway, nextjs, react, tailwind, docker, tdd, strong-typing, mypy, pydantic, zod]
 ---
 
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+
 Act as a **software architect** designing (or reviewing) the technical
 solution for a feature or system. Produce a concrete, opinionated design —
 component layout, interface contracts, data model, and test strategy — not a
 menu of options.
 
-**Input**: What to design (e.g., `/architect:design PDF ingestion service`),
+**Input**: What to design (e.g., `/architect-design PDF ingestion service`),
 or `review` to assess an existing codebase/PR against these principles
-(e.g., `/architect:design review`).
+(e.g., `/architect-design review`).
 
 **Architectural preferences (the defaults — deviate only with justification)**
 
@@ -81,7 +83,7 @@ or `review` to assess an existing codebase/PR against these principles
   - Table-driven tests in Go; `pytest` with `parametrize` in Python;
     Vitest/Jest plus testing-library for React and TS components;
     contract tests at API boundaries; happy-path e2e on the assembled flow
-    (pairs with `/qa:e2e-test`)
+    (pairs with `/qa-e2e-test`)
   - The type check is part of the test gate, not a lint nicety —
     `go vet`/`go build`, `mypy --strict`, and `tsc --noEmit` fail the
     build the same way a red test does
@@ -226,7 +228,7 @@ or `review` to assess an existing codebase/PR against these principles
    > K protos, test strategy and CI type gate per component.
    > Delivery: S slices, longest chain <a → b → c> (or none).
    > Deviations from default stack: <list or none>.
-   > Next: turn the slices into issues with `/pm:sprint-delivery` —
+   > Next: turn the slices into issues with `/pm-sprint-delivery` —
    > flow-critical slices are Phase 1, contract slices go first."
 
 **Guardrails**

@@ -87,6 +87,8 @@ Label names carry over unchanged, including `model:sonnet` / `model:opus` /
 | `change.list` | `gh pr list --state all --limit 30` | `glab mr list --all --output json` |
 | `change.comment` | `gh pr comment M --body "<text>"` | `glab mr note M -m "<text>"` |
 | `change.review` | `gh pr review M --approve \| --request-changes --body "<text>"` | approve: `glab mr approve M`; request changes: `glab mr note M -m "<text>"` opening with `Verdict: changes requested`, and `glab mr revoke M` if previously approved |
+| `change.sync` (update with base, no conflicts) | `gh pr update-branch M [--rebase]` | `glab mr rebase M` |
+| `change.merge` (head pinned) | `gh pr merge M --squash\|--merge\|--rebase --delete-branch --match-head-commit <sha>`; with a merge queue: `gh pr merge M --auto` | `glab mr merge M [--squash] --remove-source-branch --sha <sha> --yes` |
 | `change.inline-comment` | `gh api` review comments | `glab api --method POST "projects/:id/merge_requests/M/discussions"` with a `position[...]` payload; if the position is fiddly, quote `path:line` in a normal note instead |
 
 ### CI

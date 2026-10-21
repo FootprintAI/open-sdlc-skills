@@ -2,8 +2,8 @@
 
 A software team as [Claude Code agent skills](https://docs.claude.com/en/docs/claude-code)
 — Product Manager, Software Architect, Project Manager, Scrum Master,
-Software Engineer, QA Tester, Code Reviewer, Technical Writer, DevOps, and
-Release Manager.
+Software Engineer, QA Tester, Code Reviewer, Merge Steward, Technical
+Writer, DevOps, and Release Manager.
 
 Each skill is one role with its own principles, deliverables, and
 guardrails. Together they cover the whole software delivery lifecycle —
@@ -45,6 +45,7 @@ deploy and environment skills assume Containarium.
 | **QA Tester** | [`/qa-sprint-verify`](qa/sprint-verify.md) | The sprint's **batched verification pass**: the issues CI can't prove done wait on the umbrella's verification queue and are all checked against **one deployed commit**, right after the sprint deploys — never one issue at a time, because a dev environment redeployed per issue is a dev environment nobody can name a version for. Every result is stamped with the commit it was verified on; failures go straight to `/qa-issue-report`. |
 | **QA Tester** | [`/qa-issue-report`](qa/issue-report.md) | Files every defect found as a GitHub issue — one issue per finding, created *before* any fix is discussed. UI findings are verified live in a browser first (fresh defect screenshot + console errors), every issue records the app version/commit it was seen on, dedupes against existing issues, and cross-links related issues in both directions. |
 | **Code Reviewer** | [`/reviewer-pr`](reviewer/pr.md) | Reviews a PR against the team contract: acceptance criteria covered by tests (verified by *running* them), no weakened tests, proto-as-source-of-truth, typed boundaries, scope matching the issue, and a one-line **docs impact** statement for any user-facing surface the diff changes. Verdict posted on the PR page. |
+| **Merge Steward** | [`/merge-steward`](merge/steward.md) | The seat between "approved" and "merged", run periodically (`/loop 30m /merge-steward run`). Reads the repo's protection rules, stops the line on a red base, and lands approved PRs one at a time in dependency order — stack bottoms and blockers first — each merged with its head SHA pinned after CI is green on that exact head. Syncs branches that fell behind; resolves conflicts by class (generated code and lockfiles **regenerated**, append-only lists unioned, semantic conflicts resolved only when both intents are clear — and then sent back for re-review of just the resolution) and hands the rest back to the author with the hunks quoted. Never bypasses protection or a merge queue, never fixes the code it is merging. |
 | **Technical Writer** | [`/writer-docs`](writer/docs.md) | Keeps the README and user manual **true to the shipped commit**. Detects stale docs with evidence rather than instinct: `docs/DOCMAP.md` ties every page to the source paths, routes, commands and figures it describes and the commit it was last verified on, so an audit is a `git diff` of those sources, a re-run of every documented command, a sweep for undocumented routes/flags, and the reviewers' `Docs impact:` lines. Files one `docs` issue per stale page, rewrites from the code (not the old text), and **requests screenshots from `/qa-e2e-test`** via `docs/SCREENSHOTS.md` — each figure captured against a named commit with synthetic data — never hand-made. On a public repo, gap detail (commands not run, surfaces with no page, decisions) goes to a private register, never into public files, issues or PRs. |
 | **DevOps** | [`/devops-deploy`](devops/deploy.md) | Deploys git-natively **on Containarium**: commit, push/sync, converge the container to exactly that commit, verify health on the real route, then open the batched verification window on the sprint umbrella. Dev before prod; prod is confirmation-gated with a backup. Per-pass `verify-*` containers are deleted only after the results are posted. |
 | **DevOps** | [`/devops-containarium-env`](devops/containarium-env.md) | Sets up and *proves* the agent's own runtime — control-plane MCP, CLI and ssh path, build-credential path, committed dev config, permission rules — with a command per capability, so deploy and verification run unattended instead of handing steps back to a human. Credential steps stay with the human. |
@@ -77,6 +78,8 @@ evidence — and **cycles iterate**: when one closes,
       ↓
 /reviewer-pr           check it                 → verified review on the PR page
       ↓
+/merge-steward         land it                  → synced, conflict-resolved, merged in order
+      ↓                                            (runs on its own loop)
 /devops-deploy         ship it                  → git-native deploy, health verified
       ↓                                            (opens the verification window)
 /qa-sprint-verify      check the batch          → one pass, one commit, queue cleared
@@ -179,6 +182,11 @@ one), and drive one cycle:
 # 6. Review the PR (runs the tests itself, verdict on the PR page)
 /reviewer-pr 20
 
+# 6b. Land approved PRs: sync, resolve conflicts, merge in order
+#     (plan first to see what it would do; run it on a loop for a standing queue)
+/merge-steward
+/merge-steward run
+
 # 7. Deploy the merged commit (dev first; prod asks for confirmation)
 /devops-deploy api to dev
 
@@ -219,6 +227,7 @@ Or hand the middle of the cycle to the automation:
 ```
 /team-sprint-cycle ship bulk-import MVP     # PM → engineers → dev deploy → verify → release
 /loop 15m /team-sprint-cycle                # ...and keep it running
+/loop 30m /merge-steward run                # ...and land what reviewers approve
 ```
 
 ### Tips
@@ -235,6 +244,13 @@ Or hand the middle of the cycle to the automation:
   creating a new one.
 - **Weekly rhythm:** `/pm-sprint-delivery update` posts the progress
   comment on the umbrella issue — run it every week, or wire it to `/loop`.
+- **Approved is not merged — the merge steward closes that gap.**
+  Engineers never merge their own PRs and reviewers don't merge theirs, so
+  `/merge-steward run` on a loop is what lands approved work. A clean sync
+  keeps the approval; a conflict it resolved by deciding what the code
+  does goes back to `/reviewer-pr` for that resolution only. A red default
+  branch stops every merge until it is green again. Put `merge-hold` on a
+  PR to keep it out of the queue.
 - **Prod is never automatic.** `/team-sprint-cycle` stops at dev. Ship to
   prod yourself with `/devops-deploy <service> to prod`, which names the
   exact commit and waits for your confirmation.

@@ -267,7 +267,9 @@ else:
    umbrella, signed with the same `${who}-${model}` as the claim. On GitLab
    reference the merge request as `!M` — `#M` would link an unrelated
    issue. Do NOT merge your own PR unless the user says to — review is the
-   point of the PR.
+   point of the PR, and `/merge-steward` lands it once approved. If the
+   steward hands it back with a conflict it could not resolve, resolving
+   it is yours, on the same branch.
 
 7. **Report back**
 

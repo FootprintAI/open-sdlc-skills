@@ -120,6 +120,7 @@ a repo (`--repo owner/name`) or a specific sprint umbrella
    | Type | Looks like | Routes to |
    |------|-----------|-----------|
    | **Review starvation** | PR open with no review decision past the threshold | The reviewer — `/reviewer-pr <n>` |
+   | **Merge backlog** | PR approved and green but unmerged for more than a day, or a conflict `/merge-steward` handed back with no author push since | `/merge-steward` (or start its loop if none runs); for a hand-back, the engineer who owns the PR |
    | **Stalled claim** | Issue claimed, no branch/PR/commit since | The engineer; escalate the model tier if the cycle routes them |
    | **Broken shared infrastructure** | CI red on the default branch, test env down, registry unreachable | DevOps — and it blocks *everyone*, so it goes to the top |
    | **Missing decision** | Work is waiting on a human answer, not on effort — a `needs-decision` issue, or a ❓ row on the umbrella's **Open questions** older than **2 days** | Named decision-maker: PM for scope, architect for design, DevOps for environment/credential questions. Quote the question *and its listed default* so answering is one word. Past **5 days**, route it to the PM as a scope call (defer the issue) rather than keep the sprint waiting on it |

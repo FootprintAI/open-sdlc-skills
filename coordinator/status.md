@@ -21,7 +21,7 @@ from the PRD** — waterfall in the small, iterative in the large.
 | 2 | Design | `/architect-design` | Design doc in `docs/architecture/` with status `accepted`, contracts named |
 | 3 | Plan | `/pm-sprint-delivery` | Sprint umbrella issue open, P0 stories phased and assigned |
 | 4 | Build | `/engineer-implement` | Every Phase 1 child issue has a linked PR |
-| 5 | Review | `/reviewer-pr` | Every PR approved and merged; umbrella checkboxes ticked |
+| 5 | Review | `/reviewer-pr` → `/merge-steward` | Every PR approved and merged; umbrella checkboxes ticked |
 | 6 | Deploy | `/devops-deploy` | Deployed commit recorded on the umbrella/release issue, health verified, verification queue items in that commit flipped to 🔍 |
 | 7 | Prove | `/qa-sprint-verify` + `/qa-e2e-test` | One batched pass on the deployed commit: every verification-queue row ✅ (with that commit), ❌ with a filed defect, or ⏭ waived; `e2e/E2E-REPORT.md` with screenshots for the UI flows |
 | 8 | Ship | `/release-cut` | Semver tag on the codebase and GitHub at the same commit, GitHub Release published |

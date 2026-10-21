@@ -499,7 +499,10 @@ answers.
   reporting, committed-state-only deploys, no moved/force-pushed tags,
   evidence for "done")
 - Never merge the PRs this skill opens — review (`/reviewer-pr`) stays a
-  separate role, same as for a human team
+  separate role, same as for a human team, and landing approved PRs is
+  `/merge-steward`'s, run in its own loop
+  (`/loop 30m /merge-steward run`). A cycle waiting on "the scope's PRs
+  merged" with approved PRs sitting unmerged is waiting on that loop
 - **Dev only, never prod.** This skill's DevOps stage deploys to the
   dev/demo rung exclusively, and the release manager stage only tags and
   triggers the image build — it does not deploy that image anywhere. A

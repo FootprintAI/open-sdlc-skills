@@ -133,7 +133,7 @@ called stale; default 3).
 
    | Bucket | Contains |
    |--------|----------|
-   | **Waiting on a human** | ❓ open questions (with default), PRs approved but unmerged, credentials or environments to provide, prod confirmations, human-in-the-loop verification steps, "which umbrella is active", conflicting deploy requests |
+   | **Waiting on a human** | ❓ open questions (with default), PRs approved but unmerged where no `/merge-steward` loop runs or it handed the PR back, credentials or environments to provide, prod confirmations, human-in-the-loop verification steps, "which umbrella is active", conflicting deploy requests |
    | **Runs on its own** | The next cycle stage whose gate is open — with what the gate needed (questions clear, readiness ready, deps ✅) |
    | **Stalled** | Items no automated step can move: stale claims, starved reviews, red default branch, an escalated question past its threshold — cite the `/scrum-master` impediment type and owner |
 

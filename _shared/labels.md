@@ -17,8 +17,13 @@ docs and CI work. The label says at a glance what an issue *is*.
 | `chore` | maintenance that fits none of the above (deps, refactor, cleanup) | any |
 
 Existing workflow labels (`sprint`, `release`, `product`, `needs-verification`,
-`model:*`, `runtime:*`, `size:*`) are **additional**, not replacements — an umbrella is
+`merge-hold`, `model:*`, `runtime:*`, `size:*`) are **additional**, not replacements — an umbrella is
 `epic` + `sprint`; a release candidate is `epic` + `release`.
+
+`merge-hold` goes on a **PR**, not an issue: it tells `/merge-steward` to
+leave an approved PR unmerged (waiting on a release window, a paired
+change in another repo, a human's say-so). A repo's own `do-not-merge` or
+`wip` label is honored the same way. Suggested color `e99695`.
 
 ## Rules
 

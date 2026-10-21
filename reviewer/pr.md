@@ -128,8 +128,12 @@ at most, never as individual comments.
 5. **Close the loop**
 
    - **Approve** when acceptance criteria are covered and nothing blocking
-     remains — merging stays the author's/human's call unless the user
-     told you to merge on approval
+     remains. Landing it is `/merge-steward`'s job (or a human's): it
+     syncs the branch with the base and merges once CI is green on the
+     synced head. Merge yourself only if the user told you to merge on
+     approval
+   - **Re-review a conflict resolution** when `/merge-steward` asks: the
+     scope is the resolution diff it posted, not the whole PR again
    - **Request changes** with every blocking item concrete and actionable
    - **Escalate to a human** rather than deciding: architectural
      disagreements with the design doc, security-sensitive changes, or

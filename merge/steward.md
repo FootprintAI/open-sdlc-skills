@@ -114,6 +114,30 @@ one loop to the next.
    eligible, syncing what is behind, and resolving conflicts. Never
    merge around a queue that exists.
 
+   **If the repo enforces its review policy through a required check,
+   that check decides "approved".** Some repos put approval in CI: a
+   required gate check that tiers each PR by risk and passes only when
+   the tier's approval exists, a commit status a human sets on one exact
+   SHA, a required CODEOWNERS review. Find them among the required checks
+   and read what they say they enforce (the workflow file, the repo's
+   merge-policy doc). When one exists:
+
+   - its success on the head **is** the approval of record, even where
+     it lets a low-risk PR through with no review at all, and even where
+     the approval is a status rather than a review. Don't add your own
+     review requirement on top, and don't route such a PR to "Waiting on
+     review"
+   - while it is pending or failing, the PR is **Waiting on review**,
+     and your report quotes the check's own message, which usually names
+     what it is waiting for (a reviewer, a human, a command to type)
+   - the rules that do not depend on who approved still bind: changes
+     requested, holds, dependencies, opened by this session, red base
+   - **your push resets it.** A gate pinned to a SHA does not cover the
+     synced head, by design. Say in the sync comment that the gate must
+     pass again on the new head, and for a gate that needs a human,
+     whose action that is. Never re-trigger, re-post or edit an approval
+     status yourself
+
 2. **Check the base is healthy — or stop the line**
 
    ```bash
@@ -158,7 +182,7 @@ one loop to the next.
    | Draft, or a hold label (`merge-hold`, or the repo's own `do-not-merge` / `wip`) | **Held** — skip silently |
    | Opened by this session | **Not yours to merge** — flag for a human |
    | Any reviewer's latest review is "changes requested", or a GitLab `Verdict: changes requested` note with no later approve verdict | **Changes requested** — the author's |
-   | No approval, or the only approval is from the PR's author identity (same `${who}` — a shared account approving itself is not a review) | **Waiting on review** — `/reviewer-pr` |
+   | No approval, or the only approval is from the PR's author identity (same `${who}` — a shared account approving itself is not a review). Where a required approval-gate check exists (step 1), that check not yet passing on the head | **Waiting on review** — `/reviewer-pr`, or whoever the gate names |
    | Approved, but the approved commit is not the head, and a commit after it was pushed by someone other than this role's clean syncs | **Stale approval** — back to `/reviewer-pr` for the new commits |
    | Linked issue parked on a ❓ question, or a `Blocked by #N` whose PR is not merged | **Waiting on dependency** |
    | Approved, CI red on head | **Failing** — the author's |
@@ -345,7 +369,9 @@ one loop to the next.
 **Guardrails**
 
 - Never merge a PR that is not approved by a reviewer other than its
-  author, or whose approval predates commits nobody reviewed. A semantic
+  author, or whose approval predates commits nobody reviewed. Where the
+  repo's required approval gate defines "approved", its pass on the
+  exact head is that approval, and nothing you do can stand in for it. A semantic
   conflict resolution is unreviewed code until `/reviewer-pr` says
   otherwise
 - Never merge on red, pending, missing, `manual`, `skipped` or

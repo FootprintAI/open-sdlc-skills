@@ -98,13 +98,19 @@ default none), `--prefix <dir>` (default `~/.local`).
    `different` (installed version ≠ pinned) or `unpinned`. In `check`
    mode, report and stop here.
 
+   In a non-interactive session some of these probes may be refused. Do
+   not guess: list the directories you can read (`<prefix>/bin`, the
+   manifest), and mark every tool you could not probe as `unknown`, with
+   the reason. "Could not check" is a result; "probably missing" is not.
+
 4. **Install (modes `setup` and `sync`)**
 
    For each `missing` or `different` tool, one at a time:
 
    ```bash
    # example shape — substitute the project's own release location
-   tmp=$(mktemp -d)
+   tmp="<prefix>/share/toolchain/dl/<tool>-<version>"   # inside the prefix
+   mkdir -p "$tmp"
    curl -fsSLo "$tmp/pkg.tar.gz" "<official release URL for the pinned version>"
    curl -fsSLo "$tmp/pkg.sha256" "<official checksum URL or checksum file>"
    # compare the digest to the published one; abort on any mismatch
@@ -120,19 +126,32 @@ default none), `--prefix <dir>` (default `~/.local`).
    In `sync` mode without the owner's stated consent, do not install:
    report each `different` tool and the exact change it would take.
 
+   Keep every download and every language cache inside the prefix, so
+   "nothing outside the prefix" is checkable: download into
+   `<prefix>/share/toolchain/dl/` (keep the archives and the published
+   checksum files there as the audit trail), and point the toolchains'
+   own caches there too, for example `GOPATH`, `GOCACHE` and the package
+   manager's cache directory, as environment variables on each command.
+   Tell the human which variables and which `PATH` entry their own shell
+   needs to see the same tools.
+
 5. **Prove it**
 
    Run `--version` for every installed tool and record the output. Then
    run the repo's own build and test commands as found in step 2, in the
    checkout. Report pass or fail with the output tail. A failing test is
    a finding about the repo, not something to fix here: do not edit the
-   repo's code or its pins.
+   repo's code or its pins. Report, without acting on it, anything the
+   package manager flags (for example an audit warning) and anything the
+   build leaves in the checkout; confirm it is ignored by the repo's
+   `.gitignore` with `git status`.
 
 6. **Write the manifest — the artifact**
 
-   Write `<prefix>/share/toolchain/manifest.md` (and copy it to
-   `~/toolchain-manifest.md`). With `--issue`, post the same content as
-   one comment.
+   Write `<prefix>/share/toolchain/manifest.md` and, with the file-writing
+   tool (not a copy command, which a restricted session may refuse), the
+   same content to `~/toolchain-manifest.md`. With `--issue`, post the
+   same content as one comment.
 
    ```markdown
    ## Toolchain manifest — <host-or-runner> — <date>

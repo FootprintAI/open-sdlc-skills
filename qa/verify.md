@@ -69,9 +69,12 @@ The PR's overall verdict is **PASS** only if every criterion is PASS,
    ```
 
    Record `<head>` (the `headRefOid`). Extract the acceptance criteria as a
-   numbered list, verbatim, in the issue's own words. If the issue has no
-   criteria, stop: the verdict is INCONCLUSIVE ("no acceptance criteria to
-   verify against") — do not invent criteria from the diff.
+   numbered list, verbatim, in the issue's own words. Use the issue's
+   explicit acceptance-criteria list if it has one; if it only states what
+   it wants in prose, split those statements into rows, still verbatim
+   (e.g. "return it unchanged if it fits", "please add tests"). If nothing
+   testable is stated, stop: the verdict is INCONCLUSIVE ("no acceptance
+   criteria to verify against"). Never invent criteria from the diff.
 
 2. **Check out the head and find the repo's own commands**
 
@@ -80,6 +83,12 @@ The PR's overall verdict is **PASS** only if every criterion is PASS,
    `.gitlab-ci.yml`), then `Makefile` targets, then the language default.
    Never substitute your own invention for the repo's way of running its
    tests. Write down each command you will run before running it.
+
+   Check out `<head>` and prove it: `git rev-parse HEAD` must equal the
+   recorded `headRefOid`. A checkout helper can leave you on the base or a
+   stale commit without saying so; if the two differ, fetch the PR ref
+   explicitly (`git fetch origin pull/<pr>/head`) and check again before
+   running anything.
 
 3. **Run the baseline**
 
@@ -94,8 +103,11 @@ The PR's overall verdict is **PASS** only if every criterion is PASS,
 
    For each criterion, find the test (name and file) that exercises it. Run
    that test by name and confirm it fails when the behavior is absent where
-   you can do so cheaply (revert the one assertion locally, see red, put it
-   back). A criterion with no pinning test gets one written in step 5.
+   you can do so cheaply (revert the one assertion or break the one
+   behavior locally, see red, put it back). A mutation that changed
+   nothing proves nothing: check `git diff` is non-empty before reading the
+   result, and restore the file afterwards. A criterion with no pinning
+   test gets one written in step 5.
 
 5. **Write the missing tests, test-only**
 
@@ -109,6 +121,10 @@ The PR's overall verdict is **PASS** only if every criterion is PASS,
      seems to need a change to the code under test, stop: that criterion is
      FAIL, with the failing test as evidence
    - Run each new test; keep the output
+   - A new test that passes covers its criterion: commit it. A new test
+     that **fails** is the evidence for a FAIL: keep it in the report
+     (file, test body, output) and do not commit it, since a red test on the
+     author's branch breaks their CI for a finding they have not seen yet
    - Commit the new tests to the PR branch in one commit whose message names
      the criteria it covers. If the run's instructions say to hand files
      back instead of committing, follow them

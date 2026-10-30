@@ -81,14 +81,18 @@ the session made its commits. Flag it for a human instead.
      (`go.mod`, `go.sum`, `package.json`, `package-lock.json`,
      `requirements*.txt`), tool and hook config (`.envrc`,
      `.tool-versions`, `.nvmrc`, `.githooks/`, `.husky/`), and any added
-     `//go:generate` line. Test files are not in the set: they are the
-     code being verified, run only inside the sandbox
+     `//go:generate` line. Not in the set: test files, and data the code
+     embeds or reads (`NOTICE`, JSON or fixture data). Those are the code
+     being verified and run only inside the sandbox
    - **Commands from the base.** Read command definitions from the base
      branch (`git show origin/<base>:Makefile`), not from the head. Under
      `--trust-pr` the head's definitions run, and the report says so
    - **The sandbox.** Run build, test and e2e commands in a fresh
      worktree under `env -i` with an explicit allowlist (`PATH`, `HOME`
-     set to an empty temp dir, `CI=1`), or in a container that mounts no
+     set to an empty temp dir, `CI=1`, plus whatever the language
+     toolchain needs, such as `GOPATH`, `GOCACHE` and `GOPROXY` pointed at
+     temp dirs; list every variable you added in the report), or in a
+     container that mounts no
      credentials (`~/.ssh`, `~/.config/gh`, cloud config, tokens). Only
      the orchestrating session runs `git push` and `gh`, outside the
      sandbox, and only for the actions in steps 5 and 8
@@ -123,12 +127,19 @@ The PR's overall verdict is **PASS** only if every criterion is PASS,
 
    Extract the acceptance criteria as a numbered list, verbatim, in the
    issue's own words. Use the issue body's explicit acceptance-criteria
-   list if it has one. A later comment from the issue's author or a
-   maintainer that explicitly amends the criteria counts, marked "amended
-   in comment". If the body only states what it wants in prose, split
+   list if it has one, and keep it as the contract even if the body later
+   narrows the scope ("remaining work", "out of scope"): report the
+   narrowing in the report, but do not drop rows for it. A later comment
+   that explicitly amends the criteria counts, marked "amended in
+   comment", only if a human with write access wrote it (`authorAssociation`
+   OWNER, MEMBER or COLLABORATOR, not a bot). If the body only states
+   what it wants in prose, split
    those statements into rows, still verbatim (e.g. "return it unchanged
    if it fits", "please add tests"), and mark each "derived from prose"
-   so the reader can disagree. If nothing testable is stated, stop: the
+   so the reader can disagree. A criterion with several clauses stays one
+   row: any failing clause makes it FAIL, every clause is listed in the
+   evidence, and an untestable clause makes the row INCONCLUSIVE unless
+   another clause already fails. If nothing testable is stated, stop: the
    verdict is INCONCLUSIVE ("no acceptance criteria to verify against").
    Never invent criteria from the diff.
 
@@ -137,15 +148,24 @@ The PR's overall verdict is **PASS** only if every criterion is PASS,
    Run the gate and the fork question from principle 7 first. Only then
    fetch and check out `<head>` in a fresh worktree, and prove it: `git
    rev-parse HEAD` must equal the recorded `headRefOid`. A checkout helper
-   can leave you on the base or a stale commit without saying so; if the
-   two differ, fetch the PR ref explicitly (`git fetch origin
-   pull/<pr>/head`) and check again before running anything.
+   can leave you on the base or a stale commit without saying so. Fetch
+   only the PR ref (`git fetch origin pull/<pr>/head`; a fetch of
+   several refs leaves `FETCH_HEAD` on the wrong one) and check out
+   `<head>` by SHA, never by `FETCH_HEAD`, then check again before
+   running anything.
 
    Find the repo's own build, test, lint and e2e entry points, in this
    order: `--command`, then what CI runs (`.github/workflows/` on the
    base), then `Makefile` targets on the base, then the language default.
    Never substitute your own invention for the repo's way of running its
    tests. Write down each command you will run before running it.
+
+   Note whether `<head>` is behind the base (`git rev-list --count
+   <head>..origin/<base>`) and say so in the report; do not merge or
+   rebase it. If an entry point the base defines is absent from `<head>`
+   (a script the PR's branch predates), say so, mark the criteria that
+   need it INCONCLUSIVE, and never run the base's copy against the head:
+   that would verify the base's script, not the PR.
 
 3. **Run the baseline**
 
@@ -172,8 +192,9 @@ The PR's overall verdict is **PASS** only if every criterion is PASS,
 
    For each criterion, find the test (name and file) that exercises it and
    run it by name. Where cheap, also confirm the test fails when the
-   behavior is absent: in a throwaway worktree, break the one behavior or
-   revert the one assertion, see red, and discard the worktree. This is
+   behavior is absent: in a throwaway worktree, break the one behavior
+   the test checks (or revert its one assertion, when it has a single
+   one), see red, and discard the worktree. This is
    the only place QA may edit the code under test or an existing
    assertion, it is never committed or pushed, and it is optional: say
    "not mutation-checked" for a row you skipped. A mutation that changed
@@ -199,9 +220,12 @@ The PR's overall verdict is **PASS** only if every criterion is PASS,
      is a FAIL only if you can also show the test is sound: it passes
      against an independent oracle or a minimal reproduction, or its
      failure names the behavior the criterion describes. Otherwise the
-     criterion is INCONCLUSIVE ("test could not be shown sound"). Never
-     commit a failing test, since a red test on the author's branch
-     breaks their CI for a finding they have not seen yet
+     criterion is INCONCLUSIVE ("test could not be shown sound"). A
+     failing test's body and output go in the report only, never in a
+     commit, since a red test on the author's branch breaks their CI for a
+     finding they have not seen yet. A test that asserts something exists
+     or is absent (a file, a workflow) is acceptable when the criterion is
+     about repo contents; label it a repo-layout check
    - If making a test pass would need a change to the code under test,
      stop: that criterion is FAIL if the soundness rule above holds
    - **By default nothing is written to the author's branch.** Passing
@@ -241,6 +265,7 @@ The PR's overall verdict is **PASS** only if every criterion is PASS,
 
    **Verdict:** FAIL — 1 pass, 1 fail, 1 inconclusive (3 criteria)
    **Commands:** `make test` (exit 0, 41s) · `make e2e` (exit 1, 3m02s)
+   **Added to the env allowlist:** <variables, or none>
    **Tests added:** `foo_test.go` (criterion 1); not pushed
 
    | # | Criterion | Verdict | Evidence |
@@ -259,6 +284,9 @@ The PR's overall verdict is **PASS** only if every criterion is PASS,
    ## Other findings
    <lint failures or base-branch failures that map to no criterion>
    ```
+
+   List a command you could not run as `<command> (NOT RUN: <why>)`,
+   never leave it out.
 
    The report is the artifact. By default it lives in the PR comment of
    step 8, patch included. With `--push-tests` it is also committed as

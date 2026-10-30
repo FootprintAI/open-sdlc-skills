@@ -42,6 +42,7 @@ deploy and environment skills assume Containarium.
 | **QA Tester** | [`/qa-unit-test`](qa/unit-test.md) | The fast lane: isolated, deterministic unit tests in Go/Python/TypeScript that mock underlying dependencies **only where a real object won't do** — real object > fake > stub > mock, and always at a seam you own, never a third party's internals. Classifies every dependency with a reason, proves each test can actually fail before trusting it, and runs green under `-race`/shuffle. |
 | **QA Tester** | [`/qa-integration-test`](qa/integration-test.md) | The real-dependency lane: Postgres, Redis, Kafka, MinIO launched in throwaway containers via **Docker or rootless Podman** (Testcontainers or compose), pinned to the versions production runs. Random ports, readiness polling instead of sleeps, real migrations, per-test isolation, guaranteed teardown — and container logs as CI artifacts when it goes red. Its own CI lane, so the unit suite stays fast. |
 | **QA Tester** | [`/qa-e2e-test`](qa/e2e-test.md) | Happy-path e2e run of a web/UI project with **a screenshot at every step as proof of execution**. Requests sample data (PDF/image/etc.) up front, cleans up test data afterward via the app's own API or UI, and writes a flow-by-flow report to `e2e/E2E-REPORT.md`. |
+| **QA Tester** | [`/qa-verify`](qa/verify.md) | Verifies **one pull request** against its issue's acceptance criteria: runs the repo's own build, test and e2e commands on the PR head, maps every criterion to a test that pins it, adds the missing tests (**test files only — never the code under test**), and returns PASS, FAIL or INCONCLUSIVE per criterion, stamped with the head commit. No run, no PASS. Report committed to `docs/qa/`. |
 | **QA Tester** | [`/qa-sprint-verify`](qa/sprint-verify.md) | The sprint's **batched verification pass**: the issues CI can't prove done wait on the umbrella's verification queue and are all checked against **one deployed commit**, right after the sprint deploys — never one issue at a time, because a dev environment redeployed per issue is a dev environment nobody can name a version for. Every result is stamped with the commit it was verified on; failures go straight to `/qa-issue-report`. |
 | **QA Tester** | [`/qa-issue-report`](qa/issue-report.md) | Files every defect found as a GitHub issue — one issue per finding, created *before* any fix is discussed. UI findings are verified live in a browser first (fresh defect screenshot + console errors), every issue records the app version/commit it was seen on, dedupes against existing issues, and cross-links related issues in both directions. |
 | **Code Reviewer** | [`/reviewer-pr`](reviewer/pr.md) | Reviews a PR against the team contract: acceptance criteria covered by tests (verified by *running* them), no weakened tests, proto-as-source-of-truth, typed boundaries, scope matching the issue, and a one-line **docs impact** statement for any user-facing surface the diff changes. Verdict posted on the PR page. |
@@ -75,6 +76,7 @@ evidence — and **cycles iterate**: when one closes,
       ↓
 /qa-unit-test          pin the logic            → fast mocked lane, green under -race
 /qa-integration-test   pin the boundaries       → real Postgres/Redis in containers
+/qa-verify             check the PR             → per-criterion verdict on the PR head
       ↓
 /reviewer-pr           check it                 → verified review on the PR page
       ↓
@@ -112,6 +114,7 @@ check:
 | Boundaries are pinned | `/qa-integration-test` | A suite run against real Postgres/Redis/Kafka at production versions |
 | The contract is met | `/reviewer-pr` | A review that ran the tests, not one that read them |
 | The product works | `/qa-e2e-test` | A screenshot per step, in a report, against a deployed URL |
+| A PR meets its criteria | `/qa-verify` | A per-criterion verdict from a run on the PR head, with the commands and output |
 | Deployed-only behavior is checked | `/qa-sprint-verify` | One batched pass per deployed commit, every result naming that commit |
 | Defects are tracked | `/qa-issue-report` | One GitHub issue per finding, deduped and cross-linked |
 | The manual is true | `/writer-docs` | Every page stamped with the commit it was verified on; stale pages found by diffing their sources, re-running their commands, and sweeping reviews' `Docs impact:` lines |

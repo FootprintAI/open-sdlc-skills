@@ -5,7 +5,7 @@ category: Project Management
 tags: [coordinator, status, waterfall, stage-gate, lifecycle, iteration, tracking]
 ---
 
-> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. Verification is a post-deploy follow-up, never a merge gate; every `needs-verification` item is recorded on the umbrella's queue or on one dedicated verification issue — see `_shared/verification.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
 
 Act as the **project coordinator** — the role that answers "where are we?"
 The team follows a **waterfall model per cycle**: stages run in strict
@@ -21,9 +21,9 @@ from the PRD** — waterfall in the small, iterative in the large.
 | 2 | Design | `/architect-design` | Design doc in `docs/architecture/` with status `accepted`, contracts named |
 | 3 | Plan | `/pm-sprint-delivery` | Sprint umbrella issue open, P0 stories phased and assigned |
 | 4 | Build | `/engineer-implement` | Every Phase 1 child issue has a linked PR |
-| 5 | Review | `/reviewer-pr` → `/merge-steward` | Every PR approved and merged; umbrella checkboxes ticked |
-| 6 | Deploy | `/devops-deploy` | Deployed commit recorded on the umbrella/release issue, health verified, verification queue items in that commit flipped to 🔍 |
-| 7 | Prove | `/qa-sprint-verify` + `/qa-e2e-test` | One batched pass on the deployed commit: every verification-queue row ✅ (with that commit), ❌ with a filed defect, or ⏭ waived; `e2e/E2E-REPORT.md` with screenshots for the UI flows |
+| 5 | Review | `/reviewer-pr` → `/merge-steward` | Every PR approved and merged; umbrella checkboxes ticked. Pending verification is not part of this gate — a `needs-verification` PR merges once its item is recorded (`_shared/verification.md`) |
+| 6 | Deploy | `/devops-deploy` | Deployed commit recorded on the umbrella/release issue (and the open verification issue), health verified, verification-queue rows in that commit flipped to 🔍 on every queue home |
+| 7 | Prove | `/qa-sprint-verify` + `/qa-e2e-test` | One batched pass on the deployed commit: every verification-queue row — on the umbrella and the verification issue — ✅ (with that commit), ❌ with a filed defect, or ⏭ waived; `e2e/E2E-REPORT.md` with screenshots for the UI flows |
 | 8 | Ship | `/release-cut` | Semver tag on the codebase and GitHub at the same commit, GitHub Release published |
 | — | **Cycle close** | coordinator | Gates 1–8 all passed → close cycle, **re-trigger stage 1** for the next PRD |
 
@@ -76,7 +76,11 @@ repo, what is waiting on a human, what runs on its own — use
    | 5 Review | ⬜ | waiting on Build |
    | ...      |    |   |
 
-   **Blocked/stalled:** <issues with no activity, PRs waiting on review>
+   **Shipped, awaiting verification:** <#12 ⏳ (next deploy), #15 🔍 on
+   `abc1234` (next pass) — or "none"; stage 6–7 in progress, not blocked>
+   **Blocked/stalled:** <issues with no activity, PRs waiting on review —
+   an overdue verification window per `_shared/verification.md` belongs
+   here; a fresh one does not>
    **Next action:** /engineer-implement #14
    ```
 
@@ -137,6 +141,9 @@ repo, what is waiting on a human, what runs on its own — use
   verification against a shifting dev environment does not pass the gate,
   however many issues get individually blessed — the evidence is a pass
   that names a single commit
+- Gates 5 and 6 never wait on gate 7: merged-but-unverified work is
+  *shipped, awaiting verification*, reported as that state — not as
+  blocked, not as done — and never a reason to hold a merge or a deploy
 - Status updates and stage transitions are posted on the GitHub umbrella
   issue — coordination that only happened in chat didn't happen
 - When re-triggering the PRD, carried-over and deferred items are proposed

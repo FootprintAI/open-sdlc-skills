@@ -5,7 +5,7 @@ category: Team
 tags: [team, sprint, pm, engineer, devops, qa, verification, release, umbrella-issue, model-routing, worktree, deploy, tag, loop]
 ---
 
-> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. Verification is a post-deploy follow-up, never a merge gate; every `needs-verification` item is recorded on the umbrella's queue or on one dedicated verification issue — see `_shared/verification.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
 
 Act as the **cycle orchestrator**: you do not own scope (the PM stage does)
 or code (the engineer stage does) — you own that the cycle *moves* and that
@@ -51,6 +51,16 @@ carries the cycle's deployed commit and nothing else: no per-issue
 deploys, no branch pushed to dev "just to check something". That is what
 makes a single verification pass meaningful — every result names the same
 commit.
+
+**Merge and ship first; verify after.** A `needs-verification` row is a
+follow-up, not a gate on the stages before it. The engineer stage opens
+the PR with its verify steps, `/merge-steward` lands it as soon as it is
+approved and green, and the DevOps stage deploys whatever merged — none
+of them waits for a check that, by definition, can only happen once the
+change is deployed. The only thing that holds a PR is a verification item
+recorded nowhere (`_shared/verification.md`). Between the merge and the
+pass the issue is **shipped, awaiting verification** — the umbrella shows
+it as that, not as blocked and not as done.
 
 **Input**: Run bare (`/team-sprint-cycle`) to advance the cycle one step —
 each invocation does the next thing the cycle needs: scope it if there is
@@ -146,7 +156,8 @@ underpowered.
      the `needs-verification` label, **Verify on `<env>`** steps in its
      body, and a row on the umbrella's verification queue (⏳ awaiting
      deploy). This happens at scoping time, not when the issue merges —
-     step 7 can only batch what was flagged
+     step 7 can only batch what was flagged. The flag changes when the
+     issue is *checked*, never when its PR merges
    - An issue is scope-eligible only when it is **ready**: not blocked
      (a `Blocked by` whose PR is merged or at least open counts as ready
      — the engineer stage stacks on an open one; a blocker with no PR
@@ -288,8 +299,9 @@ underpowered.
      **In flight:** #41 (`model:fable`, escalated from opus — <why>)
      **Scoped in:** #47 (new defect from /qa-issue-report, `model:sonnet`)
      **Dev release:** <not yet | `<commit>` @ `<dev-url>`, verified <date>>
-     **Verification:** <queue empty | 3 ✅ on `<commit>`, 1 ❌ (defect #31),
-       2 ⏳ awaiting the next deploy>
+     **Shipped, awaiting verification:** <none | #42 ⏳ (merged, next
+       deploy), #44 🔍 on `<commit>` (next pass)>
+     **Verification:** <queue empty | 3 ✅ on `<commit>`, 1 ❌ (defect #31)>
      **Cut release:** <not yet | `vX.Y.Z` tagged, build `<passed|failed>`>
      **Waiting on a decision:** <none | #15 (2d, architect — default: fail
        loudly), #17 (1d, devops)>
@@ -304,7 +316,9 @@ underpowered.
    deploy, or automatically once the scope's PRs are merged)**
 
    Closing on unverified code is paperwork, not delivery — before the
-   cycle closes, ship what it built:
+   cycle closes, ship what it built. "Merged" is the trigger: the deploy
+   never waits for queue rows to be checked, because it is what makes
+   them checkable.
 
    - Follow the `/devops-deploy` contract in full: **committed state
      only** (a dirty tree or an untested commit does not deploy), sync
@@ -320,8 +334,10 @@ underpowered.
      the `/devops-deploy` contract calls for
    - Record the deployed commit + dev URL as a comment on the umbrella,
      and mark which verification-queue items that commit contains
-     (⏳ → 🔍) per the `/devops-deploy` contract — this is the evidence
-     step 7 verifies and step 8's closing summary points to
+     (⏳ → 🔍) per the `/devops-deploy` contract — on the umbrella and
+     on the repo's open verification issue, if one exists, since the
+     environment carries both. This is the evidence step 7 verifies and
+     step 8's closing summary points to
    - **No deployable service** (library, CLI-only project): skip this
      step, say so explicitly in the umbrella comment and the closing
      summary, and move straight to close
@@ -340,7 +356,10 @@ underpowered.
    never as they merge:
 
    - Run `/qa-sprint-verify --env dev` against the commit step 6
-     deployed. One pass, one commit, every 🔍 item in it
+     deployed. One pass, one commit, every 🔍 item in it — read from the
+     umbrella's queue *and* from the repo's open verification issue
+     (`_shared/verification.md`): rows that merged outside this sprint
+     ride the same deploy and are checked in the same pass
    - Results land on the umbrella and on each child issue, stamped with
      the commit; ❌ items become defects via `/qa-issue-report`,
      cross-linked to the issue they came from
@@ -352,8 +371,10 @@ underpowered.
      re-verified before close
    - ⏳ items merged after the deployed commit are not verifiable here.
      Either deploy again (back to step 6, which re-opens the window on
-     the new commit) or carry them to the next cycle — never verify them
-     against a version that doesn't contain them
+     the new commit) or carry them — to the next cycle's umbrella, or to
+     the repo's verification issue when this one closes first — never
+     verify them against a version that doesn't contain them, and never
+     leave them with no queue home
    - **Empty queue** (nothing needed a deployed environment this cycle):
      say so on the umbrella and move on — an empty queue is a legitimate
      result, an unchecked one is not
@@ -483,6 +504,13 @@ answers.
 - A merged PR is not a verified issue: `needs-verification` items stay on
   the umbrella's queue until a pass stamps them with the commit they were
   verified on
+- **Verification never gates a merge or the dev deploy.** No stage waits
+  for a queue row to be checked before landing or shipping the PR behind
+  it; a `needs-verification` PR that is approved and green is merged and
+  deployed like any other, and reported as *shipped, awaiting
+  verification* until the pass. The one hold is an item recorded on
+  neither the umbrella's queue nor the verification issue
+  (`_shared/verification.md`)
 - **No unattended cycle over open questions.** Continuous mode does not
   scope, route, or implement while the umbrella has a ❓ row or the
   runtime readiness check says `not ready`; it reports and stops. A

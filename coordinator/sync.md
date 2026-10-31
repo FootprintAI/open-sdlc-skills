@@ -5,7 +5,7 @@ category: Project Management
 tags: [coordinator, portfolio, sync, reconcile, multi-project, multi-sprint, digest, hub, wip, dependencies]
 ---
 
-> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. Verification is a post-deploy follow-up, never a merge gate; every `needs-verification` item is recorded on the umbrella's queue or on one dedicated verification issue — see `_shared/verification.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
 
 Act as the **portfolio coordinator** — the role above `/coordinator-status`
 (one project, deep) and `/scrum-master` (one sprint's board). This role
@@ -78,9 +78,11 @@ called stale; default 3).
    never close it yourself
 2. **Environment and queues are repo-wide.** When a deploy record appears
    on any umbrella of a repo, flip ⏳ → 🔍 on every other open umbrella of
-   that repo whose rows' merge commits are contained in the deployed
-   commit, and say so on each. When a verification pass posts results,
-   tick rows wherever they live. Two umbrellas asking for two different
+   that repo — and on the repo's open **verification issue**
+   (`_shared/verification.md`), whose rows merged outside a sprint but
+   ride the same deploys — wherever the row's merge commit is contained
+   in the deployed commit, and say so on each. When a verification pass
+   posts results, tick rows wherever they live. Two umbrellas asking for two different
    commits on the same environment is a conflict for the human bucket,
    not something to resolve by deploying twice
 3. **Dependencies between repos.** An umbrella may carry a **Depends on**
@@ -114,7 +116,11 @@ called stale; default 3).
    ```
 
    Keep every umbrella that has a `## Phase 1` or `## Verification queue`
-   section; ignore issues that merely mention "sprint". Group by repo.
+   section; ignore issues that merely mention "sprint". Also pick up each
+   repo's open **verification issue** (`gh issue list --label verification
+   --state open`) as a queue home of that repo — it is not an umbrella and
+   is never ranked, but its rows are read and reconciled with the
+   umbrellas'. Group by repo.
    Create the hub issue on first run (body: the portfolio order, empty;
    the digest goes in comments), and pin it.
 
@@ -136,6 +142,13 @@ called stale; default 3).
    | **Waiting on a human** | ❓ open questions (with default), PRs approved but unmerged where no `/merge-steward` loop runs or it handed the PR back, credentials or environments to provide, prod confirmations, human-in-the-loop verification steps, "which umbrella is active", conflicting deploy requests |
    | **Runs on its own** | The next cycle stage whose gate is open — with what the gate needed (questions clear, readiness ready, deps ✅) |
    | **Stalled** | Items no automated step can move: stale claims, starved reviews, red default branch, an escalated question past its threshold — cite the `/scrum-master` impediment type and owner |
+
+   Merged work whose queue row is still ⏳ or 🔍 is **shipped, awaiting
+   verification** — it is counted on its own line in the digest, never in
+   *Stalled* and never as not done. Its next step (a deploy, a pass) sits
+   in *Runs on its own*; it moves to *Stalled* only when the window is
+   overdue per `_shared/verification.md` (⏳ > 2 days with no deploy, 🔍 >
+   1 day with no pass), as a *verification backlog* owned by DevOps or QA.
 
 3. **Reconcile — fix what drifted, on the umbrella**
 
@@ -171,6 +184,7 @@ called stale; default 3).
    |---------|------|------|-------|-----|
    | cloud #1265 | staging KMS project + key | External dependency | devops | 39d |
 
+   **Shipped, awaiting verification:** cloud #1821 — 3 ⏳ (next dev deploy), verification #60 — 1 🔍 on `abc1234` (next pass); none overdue
    **Stale umbrellas (propose close/carry):** cloud #1467 (W36, 21d), #1392 (W37, 20d) …
    **Reconciled this run:** #1821 — 2 queue rows ⏳→🔍; #1809 — 3 boxes ticked (PRs merged 09-25)
    **Portfolio order:** 1 cloud #1821 · 2 oss #2055 · 3 agent-skills — (unchanged | proposed: …)

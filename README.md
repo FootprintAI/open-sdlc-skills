@@ -42,7 +42,7 @@ deploy and environment skills assume Containarium.
 | **QA Tester** | [`/qa-unit-test`](qa/unit-test.md) | The fast lane: isolated, deterministic unit tests in Go/Python/TypeScript that mock underlying dependencies **only where a real object won't do** — real object > fake > stub > mock, and always at a seam you own, never a third party's internals. Classifies every dependency with a reason, proves each test can actually fail before trusting it, and runs green under `-race`/shuffle. |
 | **QA Tester** | [`/qa-integration-test`](qa/integration-test.md) | The real-dependency lane: Postgres, Redis, Kafka, MinIO launched in throwaway containers via **Docker or rootless Podman** (Testcontainers or compose), pinned to the versions production runs. Random ports, readiness polling instead of sleeps, real migrations, per-test isolation, guaranteed teardown — and container logs as CI artifacts when it goes red. Its own CI lane, so the unit suite stays fast. |
 | **QA Tester** | [`/qa-e2e-test`](qa/e2e-test.md) | Happy-path e2e run of a web/UI project with **a screenshot at every step as proof of execution**. Requests sample data (PDF/image/etc.) up front, cleans up test data afterward via the app's own API or UI, and writes a flow-by-flow report to `e2e/E2E-REPORT.md`. |
-| **QA Tester** | [`/qa-sprint-verify`](qa/sprint-verify.md) | The sprint's **batched verification pass**: the issues CI can't prove done wait on the umbrella's verification queue and are all checked against **one deployed commit**, right after the sprint deploys — never one issue at a time, because a dev environment redeployed per issue is a dev environment nobody can name a version for. Every result is stamped with the commit it was verified on; failures go straight to `/qa-issue-report`. |
+| **QA Tester** | [`/qa-sprint-verify`](qa/sprint-verify.md) | The sprint's **batched verification pass**: the issues CI can't prove done wait on the umbrella's verification queue (or, outside a sprint, on the dedicated verification issue) and are all checked against **one deployed commit**, right after the deploy — never one issue at a time, because a dev environment redeployed per issue is a dev environment nobody can name a version for. Every result is stamped with the commit it was verified on; failures go straight to `/qa-issue-report`. |
 | **QA Tester** | [`/qa-issue-report`](qa/issue-report.md) | Files every defect found as a GitHub issue — one issue per finding, created *before* any fix is discussed. UI findings are verified live in a browser first (fresh defect screenshot + console errors), every issue records the app version/commit it was seen on, dedupes against existing issues, and cross-links related issues in both directions. |
 | **Code Reviewer** | [`/reviewer-pr`](reviewer/pr.md) | Reviews a PR against the team contract: acceptance criteria covered by tests (verified by *running* them), no weakened tests, proto-as-source-of-truth, typed boundaries, scope matching the issue, and a one-line **docs impact** statement for any user-facing surface the diff changes. Verdict posted on the PR page. |
 | **Merge Steward** | [`/merge-steward`](merge/steward.md) | The seat between "approved" and "merged", run periodically (`/loop 30m /merge-steward run`). Reads the repo's protection rules, stops the line on a red base, and lands approved PRs one at a time in dependency order — stack bottoms and blockers first — each merged with its head SHA pinned after CI is green on that exact head. Syncs branches that fell behind; resolves conflicts by class (generated code and lockfiles **regenerated**, append-only lists unioned, semantic conflicts resolved only when both intents are clear — and then sent back for re-review of just the resolution) and hands the rest back to the author with the hunks quoted. Never bypasses protection or a merge queue, never fixes the code it is merging. |
@@ -153,6 +153,7 @@ commands from, and the team conventions every skill points to:
 | [`_shared/labels.md`](_shared/labels.md) | Every issue carries exactly one type label — `bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore` — alongside the workflow labels (`sprint`, `release`, `needs-verification`, …). |
 | [`_shared/runtime.md`](_shared/runtime.md) | Routed issues name their agent runtime (`runtime:claude` default, `runtime:codex`), independent of the `model:*` tier; never a silent fallback; the claim comment carries the runtime and a `Box:` line. |
 | [`_shared/estimates.md`](_shared/estimates.md) | Every sprint and feature carries a time estimate: a `size:*` label, P50/P80 ship dates, and a Timetable on the umbrella that is re-forecast at every standup. |
+| [`_shared/verification.md`](_shared/verification.md) | Verification is a post-deploy follow-up, never a merge gate: every `needs-verification` item is recorded on the sprint umbrella's queue or, outside a sprint, on one dedicated verification issue (`epic` + `verification`), and checked in one batched pass per deployed commit. |
 
 ## How to use — a worked cycle
 
@@ -255,15 +256,21 @@ Or hand the middle of the cycle to the automation:
 - **Prod is never automatic.** `/team-sprint-cycle` stops at dev. Ship to
   prod yourself with `/devops-deploy <service> to prod`, which names the
   exact commit and waits for your confirmation.
-- **Verification is batched, not per-issue.** Issues that need a running
-  environment are flagged at scoping time and wait on the umbrella's
-  verification queue; one deploy makes them all checkable, and
-  `/qa-sprint-verify` clears the queue against that single commit. It's
-  what keeps your dev environment on one known version instead of whatever
-  the last person needed to check. If you provision the environment per
-  pass rather than keep one running, the batch is also what keeps it to
-  one provision per sprint: `/devops-deploy teardown dev` releases it once
-  the pass's results are posted, never before.
+- **Verification is batched, not per-issue — and never a merge gate.**
+  Issues that need a running environment are flagged at scoping time and
+  wait on the umbrella's verification queue; their PRs merge and ship as
+  soon as they are approved and green. One deploy makes them all
+  checkable, and `/qa-sprint-verify` clears the queue against that single
+  commit. It's what keeps your dev environment on one known version
+  instead of whatever the last person needed to check. Work with no open
+  sprint — a one-off issue, a hotfix, a CVE issue, something that merged
+  after the sprint closed — goes on one dedicated **verification issue**
+  instead (`_shared/verification.md`), which the same pass reads. The
+  only thing that holds a PR is an item recorded in neither place. If you
+  provision the environment per pass rather than keep one running, the
+  batch is also what keeps it to one provision per sprint:
+  `/devops-deploy teardown dev` releases it once the pass's results are
+  posted, never before.
 - **Questions are batched too, before auto-pilot.** `/pm-sprint-delivery`
   writes every point an implementer would have to guess onto the
   umbrella's open-questions section, each with the default the agent

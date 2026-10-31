@@ -42,7 +42,7 @@ Don't invent a tool.
 The connection rejects labels outside its allow-list *before* the tracker is
 touched. The default list is `scope:*`, `model:*`, `agent:needs-approval`.
 The team's other labels (the type labels, `runtime:*`, `sprint`,
-`needs-verification`) are **not** in it by default.
+`verification`, `needs-verification`) are **not** in it by default.
 
 - Filing with a rejected label fails the whole create. So: create the issue
   with allowed labels only, then `issue.label` the rest, and **report each

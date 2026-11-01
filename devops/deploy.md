@@ -5,7 +5,7 @@ category: DevOps
 tags: [devops, deploy, containarium, git, sync, docker, containers, verification, sprint, teardown, ephemeral]
 ---
 
-> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. Verification is a post-deploy follow-up, never a merge gate; every `needs-verification` item is recorded on the umbrella's queue or on one dedicated verification issue — see `_shared/verification.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
 
 Act as the **DevOps role** deploying services on **Containarium**, driven
 through its MCP tools or the `containarium` CLI. The deployment model is
@@ -121,7 +121,10 @@ a prod backend.
    Comment the deployed commit and URL on the sprint umbrella issue (or the
    release issue) for **every** environment, not just prod — the umbrella is
    where the team reads what version each rung is running, and step 7 needs
-   that record.
+   that record. If the repo has an open **verification issue**
+   (`_shared/verification.md` — label `verification`), it is a queue home
+   too: post the same record there. A deploy never waits for queue rows
+   to be checked; it is what makes them checkable.
 
 7. **Open the verification window on the sprint umbrella**
 
@@ -129,13 +132,22 @@ a prod backend.
    Because the environment now runs one known version, everything waiting on
    it gets checked together:
 
-   - Find the sprint umbrella's **Verification queue** (from
-     `/pm-sprint-delivery`). No umbrella or no queue → nothing to do; say so
-     and stop here. If the repo has **several** open umbrellas, the
-     environment is theirs jointly: a deploy carries whatever is merged
-     from any of them, so check every open umbrella's queue and flip ⏳ →
-     🔍 wherever the row's merge commit is contained, posting the window
-     on each umbrella that gained a 🔍 row
+   - Find every **queue home** in the repo: each open sprint umbrella's
+     **Verification queue** (from `/pm-sprint-delivery`) and the open
+     **verification issue**, if any:
+
+     ```bash
+     gh issue list --label sprint --state open --json number,title,body
+     gh issue list --label verification --state open --json number,title,body
+     ```
+
+     No home with rows → nothing to do; say so and stop here. The
+     environment belongs to all of them jointly: a deploy carries whatever
+     is merged, whichever home its row sits on — several umbrellas, an
+     umbrella plus the verification issue, or the verification issue
+     alone (a hotfix, a one-off, a CVE fix with no sprint open). Check
+     every home's rows and flip ⏳ → 🔍 wherever the row's merge commit is
+     contained, posting the window on each home that gained a 🔍 row
    - Work out which queued issues are actually *in* this commit:
 
      ```bash
@@ -178,9 +190,10 @@ a prod backend.
    The container's job was one batched pass. It is deleted once, after
    that pass, on evidence that the pass is actually finished:
 
-   - Read the umbrella. The newest `/qa-sprint-verify` results comment for
-     this environment must name the commit step 7 opened the window on,
-     and every ❌ row in it must already carry a defect number — a ❌ with
+   - Read every queue home step 7 posted a window on (umbrella(s) and the
+     verification issue). The newest `/qa-sprint-verify` results comment
+     on each for this environment must name the commit step 7 opened the
+     window on, and every ❌ row in it must already carry a defect number — a ❌ with
      no defect still needs the container for `/qa-issue-report` to capture
      its repro. Any of that missing → **do not tear down**; report what is
      outstanding and stop
@@ -244,9 +257,13 @@ loudly, because data rollback is never silent.
   while a `/qa-sprint-verify` pass is in flight. Shared environments run one
   known commit; a request to "just push my fix to demo for a minute" is
   answered with the next batched deploy
-- Every deploy records its commit and URL on the sprint umbrella, for every
-  rung — a deployed version nobody can name is a version nobody can verify
+- Every deploy records its commit and URL on the sprint umbrella — and on
+  the repo's open verification issue when there is one — for every rung;
+  a deployed version nobody can name is a version nobody can verify
   against
+- A deploy never waits for a queue row to be verified, and never skips a
+  merged commit because its rows are unchecked — merge, deploy, then
+  verify is the order; the pass needs this deploy to exist
 - **Never delete a container ahead of its results.** No results comment
   for that commit, a ❌ without a defect filed, evidence that only lives on
   the container, or a pass someone is still running — any one of these

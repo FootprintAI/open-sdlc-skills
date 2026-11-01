@@ -5,7 +5,7 @@ category: Engineering
 tags: [merge, rebase, conflicts, pull-request, merge-request, merge-queue, ci, branch-protection, stacked-prs, loop]
 ---
 
-> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. Verification is a post-deploy follow-up, never a merge gate; every `needs-verification` item is recorded on the umbrella's queue or on one dedicated verification issue — see `_shared/verification.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
 
 Act as the **merge steward**: the seat between "approved" and "merged".
 Engineers open PRs and never merge their own; reviewers approve and never
@@ -31,6 +31,13 @@ first report line. "PR" below means a merge request on GitLab, written
   critical path from the umbrella; you never reprioritize it.
 - **Deploys** belong to DevOps. Merging lands code on the default branch;
   it never deploys it, and a merged PR is not a verified issue.
+- **Verification** belongs to the batched pass after the deploy
+  (`_shared/verification.md`). A `needs-verification` issue is never a
+  reason to hold its PR — the check can only happen once the change is
+  deployed, and the deploy only carries what merged. The one related
+  hold is an item **recorded nowhere**: no `## Verify on` steps on the
+  PR, or no `Verification: #N` naming the umbrella queue or verification
+  issue its row lives on.
 - **Branch protection** belongs to the repo's maintainers. You work
   inside it; you never bypass, relax, or administer it.
 
@@ -185,11 +192,17 @@ one loop to the next.
    | No approval, or the only approval is from the PR's author identity (same `${who}` — a shared account approving itself is not a review). Where a required approval-gate check exists (step 1), that check not yet passing on the head | **Waiting on review** — `/reviewer-pr`, or whoever the gate names |
    | Approved, but the approved commit is not the head, and a commit after it was pushed by someone other than this role's clean syncs | **Stale approval** — back to `/reviewer-pr` for the new commits |
    | Linked issue parked on a ❓ question, or a `Blocked by #N` whose PR is not merged | **Waiting on dependency** |
+   | Linked issue carries `needs-verification` and the PR body has no `## Verify on` steps or no `Verification: #N` line | **Unrecorded verification** — the author's: add the steps and the queue home, nothing else changes |
    | Approved, CI red on head | **Failing** — the author's |
    | Approved, conflicts with base (`mergeable: CONFLICTING`) | **Needs resolution** — step 5 |
    | Approved, behind base, no conflicts | **Needs sync** — step 5 |
    | Approved, up to date (or the repo doesn't require it), CI pending | **Waiting on CI** — next tick |
    | Approved, CI green on head, up to date as required, conversations resolved as required | **Ready** |
+
+   A `needs-verification` issue whose PR *is* recorded is bucketed by the
+   rows above like any other PR — its row on the queue being ⏳ is not a
+   wait, and nothing about the pass having or not having run enters this
+   table.
 
    "Approved" uses the identity the reviewer signed with, not the
    tracker account: concurrent agents usually share one credential
@@ -356,9 +369,10 @@ one loop to the next.
      **Line stopped:** no | yes — <why>
      ```
 
-     Merged `needs-verification` issues stay on the umbrella's queue as
-     ⏳ awaiting deploy; the PM ticks Phase checkboxes from that evidence
-     (`/pm-sprint-delivery update`), you don't edit the umbrella body
+     Merged `needs-verification` issues stay on their queue — the
+     umbrella's, or the verification issue the PR named — as ⏳ awaiting
+     deploy; the PM ticks Phase checkboxes from that evidence
+     (`/pm-sprint-delivery update`), you don't edit either body
    - Report:
 
      > "Merge steward on <repo> (<GitHub|GitLab>): base 🟢 @ <sha>.
@@ -397,6 +411,11 @@ one loop to the next.
   capped at `--max`. Plan mode writes nothing anywhere
 - Merging does not deploy and does not verify. Never move a verification
   row past ⏳ or tick an umbrella checkbox because a PR merged
+- Never hold a PR because its issue is `needs-verification` or because
+  its queue row is still ⏳ — the pass runs after the deploy, which runs
+  after this merge. Hold only the PR whose item is recorded nowhere
+  (**Unrecorded verification**), and route that to the author as the
+  one-line fix it is
 - Report honestly: "synced" means CI was triggered, not that it passed;
   "resolved" means tests for the resolved packages ran locally and
   passed, with the numbers. A run that merged nothing says so, and why

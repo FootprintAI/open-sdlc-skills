@@ -1,11 +1,11 @@
 ---
 name: "QA: Sprint Verify"
-description: Run the sprint's batched verification pass — every issue that needs checking against a running environment, verified together against ONE deployed version right after the sprint deploys. Reads the verification queue off the sprint umbrella issue, stamps every result with the commit it was verified on, files failures as defects, and reports what is still unverified. When the environment was provisioned just for this pass, captures evidence that outlives it and hands the teardown back to DevOps only once every result is posted.
+description: Run the sprint's batched verification pass — every issue that needs checking against a running environment, verified together against ONE deployed version right after the sprint deploys. Reads the verification queue off the sprint umbrella issue and off the repo's dedicated verification issue (items that merged outside a sprint), stamps every result with the commit it was verified on, files failures as defects, and reports what is still unverified. When the environment was provisioned just for this pass, captures evidence that outlives it and hands the teardown back to DevOps only once every result is posted.
 category: QA
 tags: [qa, verification, sprint, umbrella-issue, deploy, dev, prod, batch, evidence, ephemeral]
 ---
 
-> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. Verification is a post-deploy follow-up, never a merge gate; every `needs-verification` item is recorded on the umbrella's queue or on one dedicated verification issue — see `_shared/verification.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
 
 Act as QA running the **sprint's verification pass**. Some issues can't be
 proven done by CI — a migration that has to run against real data, a UI flow
@@ -27,20 +27,26 @@ the batch costs one. It also means the environment is gone soon after the
 pass: evidence has to be captured into something durable *during* the pass,
 and the teardown must wait until every result is posted.
 
-**Input**: `/qa-sprint-verify` (default: the newest open sprint umbrella,
-`dev` environment). Options: `--umbrella N`, `--env dev|prod`,
-`--url <base-url>`, `--commit <sha>` (assert what should be running),
-`--only #12,#15` (re-run specific queue items after a redeploy).
+**Input**: `/qa-sprint-verify` (default: every queue home in the repo —
+the open sprint umbrella(s) and the open verification issue — on the
+`dev` environment). Options: `--umbrella N` (one umbrella, or the
+verification issue's number), `--env dev|prod`, `--url <base-url>`,
+`--commit <sha>` (assert what should be running), `--only #12,#15`
+(re-run specific queue items after a redeploy).
 
 **Preconditions — refuse rather than fake**
 
-1. An open sprint umbrella with a **Verification queue** section (created by
-   `/pm-sprint-delivery`). No queue → nothing to batch; say so and stop.
-   If the repo has **several** open umbrellas, the environment is shared
-   by all of them: read every open umbrella's queue, and the pass covers
-   every 🔍 row across them — one pass per deployed commit per repo, not
-   one per sprint. Results go on each umbrella whose rows they touch
-2. A deploy record for the target environment on that umbrella: commit + URL,
+1. At least one **queue home** with rows: an open sprint umbrella's
+   **Verification queue** section (created by `/pm-sprint-delivery`), or
+   the repo's open **verification issue** (label `verification`,
+   `_shared/verification.md`) carrying items that merged outside a
+   sprint — a hotfix, a one-off, an issue a standalone skill filed, work
+   that landed after its sprint closed. No home with rows → nothing to
+   batch; say so and stop. The environment is shared by every home:
+   read all of them, and the pass covers every 🔍 row across them — one
+   pass per deployed commit per repo, not one per sprint and not one per
+   issue. Results go on each home whose rows they touch
+2. A deploy record for the target environment on a queue home: commit + URL,
    posted by `/devops-deploy`. No deploy record → the pass has no version to
    verify against
 3. At least one queue item marked 🔍 *ready to verify* — items still ⏳
@@ -58,13 +64,17 @@ and the teardown must wait until every result is posted.
 1. **Read the queue and the deploy record**
 
    ```bash
-   gh issue view <umbrella> --json body,comments
+   gh issue list --label sprint --state open --json number
+   gh issue list --label verification --state open --json number
+   gh issue view <home> --json body,comments      # once per home
    ```
 
-   From the body: every queue row — issue number, what to verify, target
-   environment, current status. From the comments: the most recent
-   `/devops-deploy` record for `--env` (deployed commit + URL). Build the
-   working list: 🔍 ready items only, in queue order.
+   From each body: every queue row — source issue/PR, what to verify,
+   expected result, target environment and the commit it needs, current
+   status. From the comments: the most recent `/devops-deploy` record for
+   `--env` (deployed commit + URL). Build one working list across all
+   homes: 🔍 ready items only, in queue order, each remembering which home
+   its row is on.
 
 2. **Confirm what is actually running — this is the pass's identity**
 
@@ -116,7 +126,9 @@ and the teardown must wait until every result is posted.
 
 5. **Post the results where the team coordinates**
 
-   One comment on the umbrella, and one short comment per child issue:
+   One comment per queue home whose rows this pass touched (the umbrella,
+   the verification issue, or both — each listing only its own rows), and
+   one short comment per source issue:
 
    ```markdown
    ## Verification pass — <env> @ `<commit>` — <date>
@@ -136,8 +148,15 @@ and the teardown must wait until every result is posted.
    **Sprint gate:** 🔴 not clear — #19 failed (defect #31), #21 unverified
    ```
 
-   Then tick the umbrella's queue rows to match, each with the commit it was
-   verified on. A ticked row without a commit is not a verified row.
+   Then tick each home's queue rows to match — **Status** per the legend
+   and **Verified on** with the commit, date and evidence link. A ticked
+   row without a commit is not a verified row.
+
+   When every row on the **verification issue** is terminal (✅, ❌ with
+   its defect, or ⏭ waived by the user), post a closing comment naming
+   the pass and close it — the next item flagged outside a sprint opens a
+   fresh one. An umbrella's queue is cleared by `/pm-sprint-delivery
+   close`, not here.
 
 6. **File every failure as a defect, immediately**
 
@@ -152,7 +171,8 @@ and the teardown must wait until every result is posted.
    > "Verification pass on `<env>` @ `<commit>`: 3/5 verified, 1 failed
    > (defect #31), 1 unverified (missing sample data). 2 items awaiting the
    > next deploy (#23, #24). Sprint verification gate: NOT clear.
-   > Posted on umbrella #17."
+   > Posted on umbrella #17 and verification issue #60 (#60: 2/2 ✅,
+   > closed)."
 
    A clear gate is the evidence `/pm-sprint-delivery close` and
    `/team-sprint-cycle`'s close stage require. An unclear one blocks the
@@ -201,6 +221,9 @@ one prod deploy, one pass, one commit. Additionally:
   skill exists to prevent
 - Never verify an item whose PR is not contained in the deployed commit —
   it stays ⏳ and carries to the next deploy
+- Never skip a queue home: a pass that clears the umbrella and leaves the
+  verification issue's 🔍 rows untouched on the same commit is half a
+  pass, and the next deploy will move the version out from under them
 - Every result records the environment and the commit. "Verified" without a
   version is not a result, and does not tick a queue row
 - Never mark an item verified from a green CI run, a merged PR, or a code

@@ -5,7 +5,7 @@ category: Engineering
 tags: [review, pull-request, code-review, tdd, golang, typescript, protobuf, quality]
 ---
 
-> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. Verification is a post-deploy follow-up, never a merge gate; every `needs-verification` item is recorded on the umbrella's queue or on one dedicated verification issue — see `_shared/verification.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
 
 Act as a **code reviewer** for a pull request. The engineer's contract
 (`/engineer-implement`) is enforced on the way in — this role verifies it on
@@ -23,10 +23,16 @@ authored — flag it for a human instead.
    pins it. Unmet criteria or criteria without tests are requested changes,
    not nitpicks. A criterion the author says CI *can't* pin (deployed-only
    behavior, a migration against real data, a live integration) is fine —
-   but then the issue must carry `needs-verification` and the PR must carry
-   runnable **Verify on `<env>`** steps for the sprint's batched pass. A
-   criterion with neither a test nor verification steps is unproven, and
-   that is blocking
+   but then it must be **recorded** (`_shared/verification.md`): the
+   issue carries `needs-verification`, the PR carries runnable **Verify
+   on `<env>`** steps for the batched pass, and the PR names the queue
+   home its row lives on (`Verification: #<umbrella or verification
+   issue>`). A criterion with neither a test nor verification steps is
+   unproven, and that is blocking; a missing `Verification:` line is
+   blocking too, because an item recorded nowhere is one nobody will
+   check — but it is a one-line fix, say so. What is **never** blocking
+   is the verification itself still being pending: the check happens
+   after the deploy, and this PR merges before that
 2. **Correctness** — bugs, broken edge behavior on the paths the PR
    touches, race conditions, error paths that swallow failures
 3. **Test integrity** — tests actually assert the behavior (not
@@ -107,7 +113,8 @@ at most, never as individual comments.
    **Tests run locally:** <suite result — actual numbers>
    **Acceptance criteria:** N/M covered by tests (missing: <which>)
    **Deferred to verification:** <criteria the batched pass will check on
-   dev, and whether the steps are runnable — or "none">
+   dev, whether the steps are runnable, and the queue home the PR names
+   (`#17 umbrella` / `#60 verification issue`) — or "none">
    **Docs impact:** <user-facing surface changed, and the page/issue that
    covers it — or "none">
    
@@ -128,10 +135,11 @@ at most, never as individual comments.
 5. **Close the loop**
 
    - **Approve** when acceptance criteria are covered and nothing blocking
-     remains. Landing it is `/merge-steward`'s job (or a human's): it
-     syncs the branch with the base and merges once CI is green on the
-     synced head. Merge yourself only if the user told you to merge on
-     approval
+     remains. Criteria deferred to a recorded verification item count as
+     covered for this verdict — approval does not wait for the pass.
+     Landing it is `/merge-steward`'s job (or a human's): it syncs the
+     branch with the base and merges once CI is green on the synced head.
+     Merge yourself only if the user told you to merge on approval
    - **Re-review a conflict resolution** when `/merge-steward` asks: the
      scope is the resolution diff it posted, not the whole PR again
    - **Request changes** with every blocking item concrete and actionable
@@ -149,6 +157,9 @@ at most, never as individual comments.
 - Never accept "we'll check it on dev" as a substitute for a test that
   could have been written; verification is for what CI genuinely cannot
   prove, and the steps must be executable by someone who never saw the diff
+- Never request changes, or withhold approval, because a recorded
+  verification item has not been checked yet — the check follows the
+  deploy, which follows the merge. Block only an item recorded nowhere
 - Never deploy the branch to a shared environment to review it — the dev
   environment carries the sprint's version, and the batched pass is where
   deployed behavior gets checked

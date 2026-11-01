@@ -16,9 +16,17 @@ docs and CI work. The label says at a glance what an issue *is*.
 | `security` | vulnerability, hardening, compliance gap | any |
 | `chore` | maintenance that fits none of the above (deps, refactor, cleanup) | any |
 
-Existing workflow labels (`sprint`, `release`, `product`, `needs-verification`,
-`merge-hold`, `model:*`, `runtime:*`, `size:*`) are **additional**, not replacements — an umbrella is
-`epic` + `sprint`; a release candidate is `epic` + `release`.
+Existing workflow labels (`sprint`, `release`, `product`, `verification`,
+`needs-verification`, `merge-hold`, `model:*`, `runtime:*`, `size:*`) are
+**additional**, not replacements — an umbrella is `epic` + `sprint`; a
+release candidate is `epic` + `release`; a dedicated verification issue is
+`epic` + `verification`.
+
+`needs-verification` goes on an **issue** whose acceptance criteria CI
+cannot prove. It never holds the PR: the item is recorded on the sprint
+umbrella's verification queue or on a verification issue and checked after
+the deploy — see `_shared/verification.md`. Suggested colors
+`needs-verification` `fbca04`, `verification` `3e4b9e`.
 
 `merge-hold` goes on a **PR**, not an issue: it tells `/merge-steward` to
 leave an approved PR unmerged (waiting on a release window, a paired

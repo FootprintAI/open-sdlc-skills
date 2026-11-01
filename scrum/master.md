@@ -5,7 +5,7 @@ category: Project Management
 tags: [scrum, scrum-master, standup, impediments, blockers, wip, flow, retro, sprint, github-issues]
 ---
 
-> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. Verification is a post-deploy follow-up, never a merge gate; every `needs-verification` item is recorded on the umbrella's queue or on one dedicated verification issue — see `_shared/verification.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
 
 Act as the **scrum master** for a sprint that is already running. Your job
 is to find where work has *stopped moving* and to make that visible and
@@ -55,8 +55,13 @@ a repo (`--repo owner/name`) or a specific sprint umbrella
 - **Finishing beats starting.** The flow-first principle the PM plans with
   (`make the flow work first, optimize next phase`) dies if nine issues are
   60% done. Enforcing WIP is the main lever you actually hold. Merged but
-  unverified counts as unfinished — a verification queue growing all week is
-  the same failure as a pile of open PRs, one stage further right.
+  unverified is *shipped, awaiting verification*: not done, but not stuck
+  either — it is the normal state between a merge and the batched pass,
+  and it never held the merge. It becomes a failure only when the
+  post-deploy window is overdue (`_shared/verification.md`): a queue that
+  has waited days for a deploy or a pass is the same problem as a pile of
+  open PRs, one stage further right — and the fix is one deploy or one
+  pass, never a per-issue deploy.
 - **Never manufacture a green standup.** If the sprint is in trouble, the
   standup says so on the umbrella issue where everyone can see it. A
   reassuring status update that contradicts the evidence is worse than no
@@ -92,7 +97,7 @@ a repo (`--repo owner/name`) or a specific sprint umbrella
 
    | Evidence | Real state |
    |----------|------------|
-   | Issue closed, PR merged, `needs-verification`, queue row not ✅ | **Awaiting verification** (age = merge, or the deploy that made it ready) |
+   | Issue closed, PR merged, `needs-verification`, queue row not ✅ | **Awaiting verification** — shipped, its own state, neither Blocked nor Done (age = merge, or the deploy that made it ready) |
    | Issue closed, PR merged | **Done** |
    | PR open, approved, CI green | **Waiting on merge** |
    | PR open, no review decision | **Waiting on review** (age = PR opened) |
@@ -106,11 +111,15 @@ a repo (`--repo owner/name`) or a specific sprint umbrella
    the board. A claim with nothing behind it is the single most common way a
    sprint quietly loses a week.
 
-   Then read the umbrella's **verification queue** the same way. Merged work
-   that nobody has checked is in-flight work wearing a closed issue's badge:
-   a ⏳ row is waiting on a deploy, a 🔍 row is waiting on the batched pass,
-   and both have an age. Their clock is the merge (for ⏳) or the deploy that
-   made them ready (for 🔍) — not the issue's close date.
+   Then read the umbrella's **verification queue** the same way — and the
+   repo's open **verification issue** (`gh issue list --label verification
+   --state open`), whose rows are this repo's items that merged outside a
+   sprint and ride the same deploys. Merged work that nobody has checked is
+   in-flight work wearing a closed issue's badge: a ⏳ row is waiting on a
+   deploy, a 🔍 row is waiting on the batched pass, and both have an age.
+   Their clock is the merge (for ⏳) or the deploy that made them ready
+   (for 🔍) — not the issue's close date. Report them under their own
+   heading; they are not impediments until the thresholds below.
 
 3. **Name the impediments**
 
@@ -126,7 +135,7 @@ a repo (`--repo owner/name`) or a specific sprint umbrella
    | **Missing decision** | Work is waiting on a human answer, not on effort — a `needs-decision` issue, or a ❓ row on the umbrella's **Open questions** older than **2 days** | Named decision-maker: PM for scope, architect for design, DevOps for environment/credential questions. Quote the question *and its listed default* so answering is one word. Past **5 days**, route it to the PM as a scope call (defer the issue) rather than keep the sprint waiting on it |
    | **External dependency** | Waiting on a third party, credential, or another team | Whoever owns that relationship; include what was already asked and when |
    | **Oversized issue** | Been "in progress" longer than half the sprint, diff still growing | PM, to split — you report it, they cut it |
-   | **Verification backlog** | ⏳ rows piling up: merged `needs-verification` work with no deploy carrying it, or 🔍 rows deployed days ago with no pass run | DevOps for the missing deploy (`/devops-deploy`), QA for the missing pass (`/qa-sprint-verify`) — one batched deploy clears the whole queue, so never route this as N per-issue deploys |
+   | **Verification backlog** | The post-deploy window is **overdue** (`_shared/verification.md` thresholds, defaults): a ⏳ row older than **2 days** with no deploy carrying it, or a 🔍 row on the environment for more than **1 day** with no pass run — on the umbrella or the verification issue. Younger rows are *awaiting verification*, not an impediment | DevOps for the missing deploy (`/devops-deploy`), QA for the missing pass (`/qa-sprint-verify`) — one batched deploy clears the whole queue, so never route this as N per-issue deploys |
 
    Anything that doesn't fit a row is **not an impediment**. Say that
    explicitly rather than padding the list.
@@ -165,11 +174,13 @@ a repo (`--repo owner/name`) or a specific sprint umbrella
    | #14 | <who> | Waiting on review | 3d |
    | #15 | <who> | In progress | 1d |
 
-   **Awaiting verification** (queue) — 2 ⏳ since <date>, 1 🔍 since <date>
-   | Issue | Queue state | Age | Waiting on |
-   |-------|-------------|-----|------------|
-   | #12 | ⏳ merged, not deployed | 4d | a dev deploy |
-   | #15 | 🔍 on `abc1234` | 2d | `/qa-sprint-verify --env dev` |
+   **Shipped, awaiting verification** — 2 ⏳ since <date>, 1 🔍 since <date>
+   (not blocked, not done; overdue rows also appear under Impediments)
+   | Issue | Queue home | Queue state | Age | Waiting on |
+   |-------|------------|-------------|-----|------------|
+   | #12 | umbrella | ⏳ merged, not deployed | 4d ⚠ overdue | a dev deploy |
+   | #15 | umbrella | 🔍 on `abc1234` | 2d ⚠ overdue | `/qa-sprint-verify --env dev` |
+   | #52 | verification #60 | ⏳ merged, not deployed | 1d | the same dev deploy |
 
    **Impediments** — <n> open
    | # | Type | Owner | Age | Next action |
@@ -238,6 +249,10 @@ under `/loop`: the cycle drives, the scrum master narrates and escalates.
   inventing "in progress" is not
 - Never call something an impediment that is just hard work, and never call
   something fine when a PR has been waiting three days
+- Never report *shipped, awaiting verification* as blocked, stalled or
+  not done, and never list it as an impediment before its window is
+  overdue — and never suggest holding a `needs-verification` PR until it
+  is checked; the merge is what makes the check possible
 - Never assign blame to a person. Impediments have owners because someone
   must act, not because someone failed — the register names the *thing*
   that is stuck

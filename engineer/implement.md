@@ -5,7 +5,7 @@ category: Engineering
 tags: [engineer, implementation, tdd, golang, protobuf, nextjs, typescript, pull-request, ownership, ci]
 ---
 
-> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. Verification is a post-deploy follow-up, never a merge gate; every `needs-verification` item is recorded on the umbrella's queue or on one dedicated verification issue — see `_shared/verification.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
 
 Act as a **software engineer** implementing one scoped task — usually an
 issue pulled from the sprint umbrella, on GitHub or GitLab. The deliverable
@@ -149,8 +149,9 @@ else:
    - Note whether the issue carries `needs-verification` and its
      **Verify on `<env>`** steps — a criterion that CI cannot prove, which
      the sprint's batched verification pass will check on the deployed
-     environment later. It changes nothing about how you implement or test;
-     it means step 6 owes the pass runnable steps
+     environment later. It changes nothing about how you implement or test,
+     and nothing about when the PR merges; it means step 6 owes the pass
+     runnable steps and a pointer to where its queue row lives
    - Read the relevant design doc under `docs/architecture/` and the
      contracts it names; read the existing code around the change site
    - Confirm blockers are merged — or, if a blocker's PR is open but not
@@ -244,16 +245,40 @@ else:
      1. Open `/documents`, upload `e2e/fixtures/sample.pdf`
      2. Expect the row to appear within 10s with page count 3
      3. Needs flag `pdf_parser=on` (already default on dev)
+
+     Verification: #17 (sprint umbrella queue)
      ```
+
+     The `Verification: #N` line names the queue home the row lives on —
+     the sprint umbrella the issue is `Part of`, or the repo's open
+     verification issue (`_shared/verification.md`). It is what lets the
+     reviewer and `/merge-steward` see the item is recorded; the PR then
+     merges on approval and green CI like any other. Unmet verification
+     is never a reason to hold your own PR, mark it draft, or wait for
+     someone to check it first
 
    **If you discover mid-implementation that a criterion CI can't prove**
    — the behavior only manifests deployed, the migration needs real data,
    the integration only exists against the live third party — add the
    `needs-verification` label yourself, write the **Verify on `<env>`**
-   steps on the issue, and say so in a comment so the PM's next umbrella
-   update picks it up as a new queue row. Never verify it by deploying your
-   branch to the shared dev environment: dev carries the sprint's version,
-   and a per-issue deploy is what the batched pass exists to prevent.
+   steps on the issue, and record the row:
+
+   - issue in an open sprint → say so in a comment on the umbrella; the
+     PM's next update adds the queue row (your PR does not wait for it)
+   - no open umbrella covers it (a one-off issue, a hotfix, work after
+     the sprint closed) → append a row to the repo's open verification
+     issue, or open one per `_shared/verification.md` if none is open:
+
+     ```bash
+     gh issue list --label verification --state open --json number,title
+     gh issue create --title "Verification queue: <area> (opened <date>)" \
+       --label epic --label verification --body "<shape from _shared/verification.md>"
+     ```
+
+   Either way the PR body's `Verification: #N` names where. Never verify it
+   by deploying your branch to the shared dev environment: dev carries the
+   sprint's version, and a per-issue deploy is what the batched pass
+   exists to prevent.
 
    Then wait for CI on the PR (GitHub: `gh pr checks --watch`, or
    `gh run watch <run-id>`; GitLab: `glab ci status --live`, with
@@ -314,6 +339,10 @@ else:
 - Never tick a verification queue row, mark an issue verified, or claim
   "verified on dev" from a merged PR — merged means merged, and the
   batched pass on a named commit is what makes it verified
+- Never hold a `needs-verification` PR for its check: it merges on
+  approval and green CI, and the check follows the deploy. What you owe
+  is the record — label and steps on the issue, `## Verify on` and
+  `Verification: #N` on the PR, a row on the queue home — not a wait
 - Report test results honestly — paste real output; a red suite is
   reported red, never described as "mostly passing"
 - Don't introduce new dependencies casually: prefer the standard library

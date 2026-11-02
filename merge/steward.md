@@ -265,7 +265,7 @@ one loop to the next.
      |-------|-----------|------------|
      | **Generated** | protobuf/grpc-gateway output, codegen, mocks | Never hand-merge. Take either side, re-run the repo's generator from the merged *sources*, and commit its output |
      | **Lockfile** | `go.sum`, `package-lock.json`, `pnpm-lock.yaml`, `poetry.lock` | Resolve the manifest (`go.mod`, `package.json`) first, then regenerate the lockfile with the package manager |
-     | **Append-only** | Both sides added distinct entries to a list: CHANGELOG, route table, registry, import block, migration index | Keep both sides' entries, in the file's own ordering. Two migrations claiming the same sequence number are **not** append-only — semantic |
+     | **Append-only** | Both sides added distinct entries to a list: CHANGELOG (in a repo that uses fragments, a conflict here means the PR edited the shared file — move its entry to its own fragment, `_shared/changelog.md`), route table, registry, import block, migration index | Keep both sides' entries, in the file's own ordering. Two migrations claiming the same sequence number are **not** append-only — semantic |
      | **Semantic** | Both sides changed the same logic, signature, config value or test | Resolve only if both PRs' issues make each side's intent unambiguous and one result honors both. Otherwise hand back (below) |
 
      After resolving: the build compiles, and the tests for every package

@@ -157,6 +157,7 @@ commands from, and the team conventions every skill points to:
 | [`_shared/runtime.md`](_shared/runtime.md) | Routed issues name their agent runtime (`runtime:claude` default, `runtime:codex`), independent of the `model:*` tier; never a silent fallback; the claim comment carries the runtime and a `Box:` line. |
 | [`_shared/estimates.md`](_shared/estimates.md) | Every sprint and feature carries a time estimate: a `size:*` label, P50/P80 ship dates, and a Timetable on the umbrella that is re-forecast at every standup. |
 | [`_shared/verification.md`](_shared/verification.md) | Verification is a post-deploy follow-up, never a merge gate: every `needs-verification` item is recorded on the sprint umbrella's queue or, outside a sprint, on one dedicated verification issue (`epic` + `verification`), and checked in one batched pass per deployed commit. |
+| [`_shared/changelog.md`](_shared/changelog.md) | Changelog entries go in one fragment file per PR, never in a shared `CHANGELOG.md` section every open PR edits; the release step assembles them. Removes the per-PR changelog merge conflict. |
 
 ## How to use — a worked cycle
 

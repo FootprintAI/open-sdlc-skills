@@ -79,6 +79,11 @@ also fine, subject to the same preconditions.
 
 3. **Draft release notes**
 
+   If the repo keeps changelog fragments (`_shared/changelog.md`), the
+   notes start from them: assemble them into the new section, delete them
+   in the same release commit, and cross-check each against a merged PR.
+   A merged user-visible PR with no fragment is reported, not invented.
+
    Categorize each merged PR:
 
    ```markdown

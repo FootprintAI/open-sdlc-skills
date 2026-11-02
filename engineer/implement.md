@@ -234,6 +234,10 @@ else:
      summary line, not the wall of logs
    - Anything a reviewer should look at first, and any deviation from the
      design doc (with the flag raised in step 2's terms)
+   - The changelog entry, if the change is user-visible. Follow the
+     repo's convention (`_shared/changelog.md`): where it has a fragment
+     directory, add one new file in this PR and do not edit
+     `CHANGELOG.md` — that file is what every other open PR is editing
    - For a `needs-verification` issue, a **Verify on `<env>`** section: the
      exact steps someone else can run against the deployed environment
      (route, input, expected result — plus any test data, feature flag, or
@@ -317,6 +321,8 @@ else:
 - Never weaken, delete, or `skip` an existing test to get green — a
   newly-failing existing test means your change broke something: fix the
   change or raise it
+- Never edit a shared changelog file in a repo that uses fragments —
+  add your own fragment (`_shared/changelog.md`)
 - Never hand-edit generated code (proto stubs, generated clients) —
   change the source contract and regenerate
 - Never claim a PR is green off a local run — green means a CI run on the

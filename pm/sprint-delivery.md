@@ -120,8 +120,21 @@ weekly progress update instead of planning a new sprint.
 
    - Title: imperative and small enough for one person-week or less
    - Body: what "done" means (1–3 acceptance criteria), phase label
-     (`phase-1-flow` / `phase-2-optimize`), and dependencies
-     (`Blocked by #N`)
+     (`phase-1-flow` / `phase-2-optimize`), and dependencies as **one
+     line of exactly this form**, on its own line, outside any code fence:
+
+     ```
+     **Blocked by:** #12, #14
+     ```
+
+     or `**Blocked by:** none`. The colon and the single line matter:
+     tools that start an issue when its blockers are done read only that
+     line, and they read it literally. `Blocked by #12` (no colon),
+     `(blocked by #12)` inside a sentence, or a bulleted list under the
+     label are not read — the issue is then treated as having no
+     blockers and starts at once, with nothing to say the line was
+     ignored. Same-repository `#N` only; put a note about *why* after the
+     numbers or on another line
    - Assignee if known; leave unassigned otherwise — the umbrella issue is
      where assignment gets negotiated
 
@@ -273,6 +286,19 @@ weekly progress update instead of planning a new sprint.
    back-link the umbrella (`Part of #<umbrella>`), so every individual
    issue's progress is visible from one page.
 
+   Where a tracker can start a sprint's issues from the umbrella (rather
+   than a person starting each), it finds the members by a second line in
+   each child, again one line, exactly this form:
+
+   ```
+   **Sprint:** #<umbrella>
+   ```
+
+   Add it with the back-link. A child that does not name the umbrella is
+   not treated as a member, however the umbrella's task list reads. Then
+   spot-check one child: its body must show both the `**Blocked by:**` and
+   the `**Sprint:**` line as written.
+
 5. **Present the plan**
 
    > "Sprint <YYYY-Www> created: umbrella #N with X Phase 1 tasks (flow) and
@@ -417,5 +443,9 @@ weekly progress update instead of planning a new sprint.
 - Chains are scheduled, not merged: dependent tasks keep their own issues
   and `Blocked by` edges, the critical path is named and owned, and the
   fix for a long chain is a contract-first recut, never one big issue
+- A dependency lives in the child's own `**Blocked by:** #N` line. The
+  umbrella's "(blocked by #N)" note is for readers; after filing, re-read
+  one child's body and confirm the line is there in that form — never
+  assume a dependency was recorded because the umbrella mentions it
 - This skill coordinates and reports — it does not implement tasks, merge
   PRs, or assign people without being told who is available

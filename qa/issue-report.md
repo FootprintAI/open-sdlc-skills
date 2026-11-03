@@ -55,10 +55,16 @@ current repo).
    A UI finding is not filed from hearsay or from a stale report — reproduce
    it yourself first:
 
-   - Drive a real browser through the browser MCP (the Claude-in-Chrome MCP
-     tools, or the project's Playwright setup if that's what the repo uses)
-     against the environment where the finding was observed — the test box,
+   - Drive a real browser with **Playwright** by default (the same tool
+     `qa/e2e-test.md` sets up): use the repo's existing e2e tool if it has one
+     (Playwright, Cypress, WebdriverIO); otherwise run a throwaway Playwright
+     script under `e2e/`, headless, and do not restructure the project around it.
+     The Claude-in-Chrome MCP is an acceptable alternative only when it is
+     connected and the finding depends on the person's own signed-in session.
+     Run against the environment where the finding was observed — the test box,
      the deployed URL, or a locally launched instance
+   - If no browser driver can start, the finding is **cannot verify** (see the
+     outcomes below): report the blocker and do not file it as verified
    - Walk the exact reproduction steps and capture a **fresh screenshot of
      the defect state** — this screenshot, taken during verification, is the
      evidence that goes in the issue (plus console/network errors surfaced

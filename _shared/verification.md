@@ -3,7 +3,8 @@
 **Applies to every skill that flags, merges, deploys, verifies or reports
 on a `needs-verification` item** — `/pm-sprint-delivery`,
 `/team-sprint-cycle`, `/engineer-implement`, `/reviewer-pr`,
-`/merge-steward`, `/devops-deploy`, `/qa-sprint-verify`, `/scrum-master`,
+`/merge-steward`, `/devops-deploy`, `/qa-sprint-verify`, `/release-cut`,
+`/release-verify`, `/scrum-master`,
 `/coordinator-status`, `/coordinator-sync`, and any skill that files a
 single issue whose definition of done needs a running environment (for
 example `/security-cve-iso-issue`).
@@ -19,15 +20,23 @@ criteria are **verification items**. Three things are always true of them:
    it is approved and green, and ships with the next deploy. Holding a PR
    until someone checks it on an environment inverts the order — the
    environment only carries the change *after* it merges and deploys
-2. **Each one is recorded in exactly one place** before its PR merges:
-   the **verification queue on the sprint umbrella** when the issue is in
-   an open sprint, otherwise a **dedicated verification issue** (below).
-   An item recorded nowhere is the one thing that *does* hold a PR,
-   because it is a criterion nobody will ever check
-3. **They are verified together, after the deploy, against one deployed
-   commit** — one batched pass (`/qa-sprint-verify`), every result stamped
-   with that commit, every failure filed as a defect. Never one issue at a
-   time, never by deploying a branch to a shared environment
+2. **Each one is recorded in exactly one place** before its PR is
+   approved: the **verification queue on the sprint umbrella** when the
+   issue is in an open sprint, otherwise a **dedicated verification
+   issue** (below). `/reviewer-pr` checks this at review time and
+   requests changes for an item recorded nowhere, because that is a
+   criterion nobody will ever check. `/merge-steward` reads CI and
+   reviews only — it never holds a PR for verification state, recorded
+   or not. Anything that still slips through is caught at release time:
+   `/release-verify` lists every unrecorded item in the release window
+   and gets it a row before the post-release pass
+3. **They are verified together, after the release, against one deployed
+   commit** — one batched pass (`/qa-sprint-verify`), triggered by
+   `/release-verify` once `/release-cut` has tagged and the tag's commit
+   is running, every result stamped with that commit, every failure filed
+   as a defect. Never one issue at a time, never by deploying a branch to
+   a shared environment. A failure does not move the tag: the fix ships as
+   the next patch release
 
 "Shipped, awaiting verification" is therefore a normal state, not a stuck
 one and not a done one. It becomes an impediment only when the
@@ -46,9 +55,11 @@ A verification item is recorded when all of these hold:
   on the open verification issue — and the PR body names where:
   `Verification: #<umbrella or verification issue>`
 
-`/reviewer-pr` checks the first two and asks for the third; `/merge-steward`
-holds a PR only while any of the three is missing. Pending verification
-itself is never a reason to hold.
+`/reviewer-pr` checks all three and requests changes while any is missing;
+that review verdict is the only hold. `/merge-steward` never holds a PR for
+verification — not for a missing record, not for a pending check. The
+backstop for an item that merged unrecorded is `/release-verify`, which
+finds it in the release window and asks for its row before the pass.
 
 ## Where the queue lives — the decision rule
 
@@ -113,8 +124,9 @@ pass, a standup or a digest reads both the same way.
 | Flagged mid-implementation | `/engineer-implement` | label + steps on the issue, `## Verify on` + `Verification: #N` on the PR; the PM's next update adds the umbrella row, or the engineer appends the row to the verification issue itself |
 | Filed by a standalone skill | that skill | label + steps on the issue, row on the verification issue (opened if none) — at filing time, not when the fix merges |
 | Merged | `/merge-steward` | nothing on the queue — a merged PR is not a verified issue; the row stays ⏳ |
-| Deployed | `/devops-deploy` | deploy record (commit + URL) on every queue home in the repo; ⏳ → 🔍 for rows whose commit is contained; the window comment |
-| Verified | `/qa-sprint-verify` | results comment on every queue home its rows touched; each row ✅/❌/⚠️ with the commit; one defect per ❌ via `/qa-issue-report` |
+| Deployed | `/devops-deploy` | deploy record (commit + URL, and the tag when deploying a release) on every queue home in the repo and on the open release issue; ⏳ → 🔍 for rows whose commit is contained; the window comment |
+| Released | `/release-cut` → `/release-verify` | the tag; the release issue's ledger of every item in `<last-tag>..<tag>` (read from the homes, never copied); the one post-release pass triggered on the tag's commit |
+| Verified | `/qa-sprint-verify` | results comment on every queue home its rows touched; each row ✅/❌/⚠️ with the commit; one defect per ❌ via `/qa-issue-report`; a ❌ on a released tag means a patch release, never a moved tag |
 | All rows terminal | `/qa-sprint-verify` (or the PM) | closing comment on the verification issue and close it; the umbrella's queue is cleared by `/pm-sprint-delivery close` |
 
 A ❌ row does not reopen the source issue by itself: the defect is the

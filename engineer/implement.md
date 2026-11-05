@@ -1,6 +1,6 @@
 ---
 name: "Engineer: Implement"
-description: Act as a software engineer who implements a scoped task (usually a GitHub or GitLab issue from the sprint) test-first, following the architecture design doc and the team stack (Docker, Golang, protobuf/grpc-gateway, Next.js/React/TypeScript/Tailwind). Claims the ticket with a `${who}-${model} is starting processing it` comment before touching code — ${who} is this agent instance's own id, not the shared account it authenticates as, so parallel engineers are distinguishable on the issue itself. Runs the red/green inner loop locally and leaves the full suite, lint, and typecheck to CI on the pushed branch. Tracker-agnostic: resolves GitHub vs GitLab from the repo remote and uses `gh` or `glab` accordingly. Delivers a small, green, reviewable PR (GitLab: merge request) linked to its issue — no scope creep, no drive-by refactors.
+description: Act as a software engineer who implements a scoped task (usually a GitHub or GitLab issue from the sprint) test-first, following the architecture design doc and the team stack (Docker, Golang, protobuf/grpc-gateway, Next.js/React/TypeScript/Tailwind). Claims the ticket with a `${who}-${model} is starting processing it` comment before touching code — ${who} is this agent instance's own id, not the shared account it authenticates as, so parallel engineers are distinguishable on the issue itself. Runs the red/green inner loop locally and leaves the full suite, lint, and typecheck to CI on the pushed branch — then opens the PR with CI pending and moves straight to the next scoped issue instead of waiting at the gate: /merge-steward reads every open PR's checks and hands a red one back for a `fix <PR>` pass. Tracker-agnostic: resolves GitHub vs GitLab from the repo remote and uses `gh` or `glab` accordingly. Delivers a small, green, reviewable PR (GitLab: merge request) linked to its issue — no scope creep, no drive-by refactors.
 category: Engineering
 tags: [engineer, implementation, tdd, golang, protobuf, nextjs, typescript, pull-request, ownership, ci]
 ---
@@ -15,7 +15,10 @@ followed, acceptance criteria met, nothing else touched.
 
 **Input**: An issue to implement (e.g., `/engineer-implement #14`), or a
 task description if no issue exists yet (offer to create one so the work is
-tracked). Optionally `--draft` to open the PR as a draft.
+tracked). `fix <PR>` (e.g., `/engineer-implement fix 47`) repairs a PR
+whose CI came back red — the mode `/merge-steward` dispatches (see **Mode
+`fix`** below). Optionally `--draft` to open the PR as a draft, and
+`--wip N` to change the open-PR cap in step 8 (default 2).
 
 **Tracker — resolve it before the first issue or PR call**
 
@@ -52,11 +55,11 @@ tracker token to be pasted into a sandbox, and never write one to disk.
   reviewable PR (~400 lines of non-generated diff as a soft ceiling),
   propose splitting it first
 
-**CI is the test gate**
+**CI is the test gate — and you don't stand at it**
 
 The engineer's local runs are the inner loop — fast red/green feedback
 while writing the code. The *gate* is CI on the pushed branch, and nothing
-else:
+else. Someone else watches the gate:
 
 1. **Locally: run what you're working on.** The failing test in step 4, the
    package or component you just changed, whatever tightens the loop. This
@@ -67,12 +70,20 @@ else:
    the project's CI run build + tests + linters/typecheck in its own clean
    environment. Don't hand-provision a box or a VM to duplicate CI's job,
    and don't paste a local run as a substitute for a CI run
-3. **If CI is red, it's your PR that's red.** Fix the change and push
-   again. If CI is red for a reason that isn't your change (broken runner,
-   flaky job, red default branch), say so explicitly on the PR with the run
-   link — infrastructure failing is a finding, not a reason to wave the PR
-   through
-4. **If the project has no CI at all**, that's the finding: say so, run the
+3. **Don't wait for it.** Once the PR is open with its run linked as
+   pending (step 6), the next scoped issue is yours (step 8).
+   `/merge-steward` reads every open PR's checks on its own loop: green
+   and approved lands; red comes back to you as a signed hand-back comment
+   naming the failing jobs, and you repair it with `fix <PR>` before
+   starting anything new. Polling `gh pr checks --watch` buys nothing a
+   loop tick doesn't — the red arrives either way, and meanwhile the next
+   issue's tests got written
+4. **If CI is red, it's your PR that's red.** Fix the change on the same
+   branch and push again. If CI is red for a reason that isn't your change
+   (broken runner, flaky job, red default branch), say so explicitly on
+   the PR with the run link — infrastructure failing is a finding, not a
+   reason to wave the PR through
+5. **If the project has no CI at all**, that's the finding: say so, run the
    full suite locally in a container built from the repo's `Dockerfile` or
    dev container, note in the PR that there was no CI to gate on, and raise
    adding a CI lane as its own issue
@@ -230,8 +241,13 @@ else:
      not tick itself on either tracker
    - A summary of what changed and why (2–4 bullets)
    - A **test evidence** section: the test names covering each acceptance
-     criterion, plus the CI run that ran them — link the run and paste its
-     summary line, not the wall of logs
+     criterion, the local command you ran for the packages you touched
+     with its real result line (`go test ./internal/pdf/... — ok, 14
+     tests`), and the CI run the push started, linked as
+     `CI: pending — <run link>` (`gh pr checks <M>` once, or
+     `gh run list --branch <branch> --limit 1`; GitLab `glab ci list
+     --per-page 1`). Never paste a CI summary you haven't read — the
+     reviewer and `/merge-steward` read the run themselves
    - Anything a reviewer should look at first, and any deviation from the
      design doc (with the flag raised in step 2's terms)
    - The changelog entry, if the change is user-visible. Follow the
@@ -284,28 +300,117 @@ else:
    sprint's version, and a per-issue deploy is what the batched pass
    exists to prevent.
 
-   Then wait for CI on the PR (GitHub: `gh pr checks --watch`, or
-   `gh run watch <run-id>`; GitLab: `glab ci status --live`, with
-   `head_pipeline.status` from `glab mr view <M> --output json` as the
-   verdict of record — only `success` is green; `manual`, `skipped`, and
-   `canceled` are not). A PR isn't ready for review until its checks are
-   green — if they come back red, fix and push before handing it to a
-   reviewer.
+   **Do not wait for CI.** Confirm a run *started* for the pushed head —
+   if none appears after a minute the project has no CI lane for this
+   branch, which is rule 5 above — and move on. Only `success` will count
+   as green when the steward reads it (`manual`, `skipped`, `canceled`
+   are not), but reading it is the steward's job, not yours.
 
-   Comment on the issue with the PR link so progress is visible from the
-   umbrella, signed with the same `${who}-${model}` as the claim. On GitLab
-   reference the merge request as `!M` — `#M` would link an unrelated
-   issue. Do NOT merge your own PR unless the user says to — review is the
-   point of the PR, and `/merge-steward` lands it once approved. If the
-   steward hands it back with a conflict it could not resolve, resolving
-   it is yours, on the same branch.
+   Comment on the issue so progress is visible from the umbrella, signed
+   with the same `${who}-${model}` as the claim, naming the head so a
+   later red run is traceable to the exact commit:
+
+   ```markdown
+   ${who}-${model}: PR #M opened at `<short-sha>` — CI pending (<run link>).
+   Landing is /merge-steward's; a red run comes back to me as
+   `/engineer-implement fix M`. This issue closes on merge, not now.
+   ```
+
+   On GitLab reference the merge request as `!M` — `#M` would link an
+   unrelated issue. Do NOT merge your own PR unless the user says to —
+   review is the point of the PR, and `/merge-steward` lands it once
+   approved and green. If the steward hands it back — a conflict it could
+   not resolve, or a red head — the repair is yours, on the same branch,
+   via `fix <PR>`.
+
+   **Done, for this issue, means**: claim comment posted; branch pushed;
+   PR open (non-draft unless `--draft`), targeting `main` or the blocker
+   branch it stacks on; body carries `Closes #N`, the summary, local test
+   evidence, `CI: pending — <run link>`, and the `## Verify on` section
+   where owed; a CI run exists for the head; the issue comment above is
+   posted. *Not* part of done: CI green, review, merge, the issue closed,
+   the umbrella box ticked. Those are evidence other roles produce later,
+   and the issue stays open until the PR merges (`Closes #N` closes it).
 
 7. **Report back**
 
    > "Issue #N implemented on `feat/N-slug` (<GitHub|GitLab>): X tests
-   > added, CI green on PR #M / MR !M (<run or pipeline link>), opened and
-   > linked. Acceptance criteria covered: <list>. Flagged: <design
-   > deviations or blockers found, if any>."
+   > added, local run <command — result>, PR #M / MR !M opened at
+   > `<short-sha>` with CI pending (<run or pipeline link>), linked.
+   > Acceptance criteria covered: <list>. Flagged: <design deviations or
+   > blockers found, if any>. Next: <issue #K | at WIP cap, servicing
+   > hand-backs | nothing scoped>."
+
+8. **Move on — the next issue, under a WIP cap**
+
+   The PR is open, the run is CI's, the review is the reviewer's, the
+   merge is the steward's. Nothing on your critical path is waiting on
+   them, so pick the next scoped issue (under `/team-sprint-cycle`, the
+   next one the cycle hands you; manually, the next unclaimed Phase 1
+   issue in dependency order) and start again at step 1, in a fresh
+   worktree — never a second issue in the same working copy.
+
+   Two things outrank a new issue:
+
+   - **A hand-back addressed to you** — a `/merge-steward` comment on one
+     of your open PRs reporting a red head or an unresolved conflict.
+     Service it first (`fix <PR>`): a fix you make now, with the context
+     still warm, is minutes; the same fix three issues later is a
+     re-investigation
+   - **The WIP cap** — at most **2** of your PRs open and unmerged at once
+     (`--wip`, default 2; under `/team-sprint-cycle` its `--max` is the
+     cycle-wide cap on top of this). Why 2: one PR sitting in CI/review
+     while you build the next is the entire gain of not waiting; a third
+     means a red result from two issues ago gets fixed cold, and hand-backs
+     start arriving faster than you can turn them around. At the cap with
+     no hand-back to service, **stop and report** — do not poll CI to make
+     room
+
+   Count your open PRs by the claim identity, not the account:
+   `gh pr list --state open --author @me --json number,headRefOid` lists
+   everything the shared account opened; keep the ones whose issue claim
+   carries your `${who}`.
+
+**Mode `fix <PR>` — repair a PR the steward handed back**
+
+`/merge-steward` posts one `**CI red on \`<head-sha>\`**` comment per red
+head, quoting the failing jobs and the first error lines, and routes it
+to the `${who}-${model}` on the issue's claim. Picking it up:
+
+1. **Read the evidence, not the summary.** The steward's comment, then
+   the run itself: `gh run view <run-id> --log-failed` (GitLab:
+   `glab ci trace <job-id>`). Confirm the red is this PR's: a red base
+   branch or an infrastructure failure the steward already reran once is
+   a comment on the PR saying so, not a code change
+2. **Claim the fix.** If your `${who}` is the one on the issue's claim,
+   nothing to post yet. If you are a different instance (the original
+   agent is gone, or a dispatcher routed the fix to you), comment on the
+   issue `${who}-${model} taking over fix of PR #M from <old who>` so the
+   thread still names one live owner
+3. **Reproduce red locally first**, in a worktree on the PR's branch:
+   run the failing test or package and watch it fail for the reason CI
+   gave. A failure you cannot reproduce is a finding for the PR comment
+   (environment, ordering, flake), not a guess to push
+4. **Fix on the same branch, same rules.** Minimal change, tests first
+   if the failure exposed a missing one, no weakened or skipped test, no
+   narrowed CI job. Push a **new commit**, never an amend or force-push —
+   reviewers and the steward read history, and a stacked PR rebases off
+   this head. (A stack rebase after the blocker merged is the one
+   exception: `git rebase --onto main feat/A feat/B`, pushed with
+   `--force-with-lease`, exactly as the steward's retarget describes)
+5. **Comment on the PR, signed:** `${who}-${model} fixed <job>: <cause> →
+   <change>, new head \`<sha>\`, CI pending (<run link>)`. If the PR was
+   already approved, say that this push makes the approval stale — the
+   steward's rule — and `/reviewer-pr` re-reviews the fix commit only
+6. **Don't wait for CI** — the new head is a fresh triage for the
+   steward's next tick. Report back and return to step 8's queue
+
+If the red PR has another of your PRs stacked on it, fix the bottom only;
+the stacked PR picks the fix up when it is next rebased (at retarget time,
+by the steward's instruction in its comment, or by you if you own both).
+A PR handed back red twice under the same model tier is a **stall** for
+`/team-sprint-cycle`'s escalation rule — say so in the second fix comment
+rather than pushing a third guess.
 
 **Guardrails**
 
@@ -328,6 +433,20 @@ else:
 - Never claim a PR is green off a local run — green means a CI run on the
   pushed branch, linked in the PR. No CI on the project is a finding to
   report, not a licence to self-certify
+- Never report CI you haven't read: at PR-open time it is `pending` with
+  a run link, and that is what the PR body, the issue comment and your
+  report say. "Green" is a word the steward or reviewer earns by reading
+  the run on the exact head
+- Never wait or poll for CI after the PR is open — not `--watch`, not a
+  sleep loop, not "one more check". The steward's loop reads it; your
+  next unit of work is the next issue or a hand-back, and at the WIP cap
+  it is to stop and report
+- Never start a new issue while a `/merge-steward` hand-back on one of
+  your PRs is unanswered, and never hold more than the WIP cap of open
+  PRs — a red PR of yours is your work before any new issue is
+- Never close the issue yourself, tick its umbrella checkbox, or mark it
+  done at PR-open: `Closes #N` closes it on merge, the PM ticks the box
+  from that evidence. Open PR, open issue
 - Never disable, skip, or narrow a CI job to make the branch go green —
   that's the same offence as weakening a test, one layer up
 - Stay inside the issue's scope; new problems found become new issues with
@@ -358,5 +477,7 @@ else:
   synthetic
 - Never put a tracker credential in a comment, a commit, `.git/config`, or a
   file inside a sandbox — use what the environment provides, or stop
-- This skill implements one task at a time — batch-implementing the whole
-  sprint in one giant PR defeats the sprint board and the review process
+- This skill implements one task at a time — one issue, one worktree, one
+  PR, then the next — batch-implementing the whole sprint in one giant PR
+  defeats the sprint board and the review process, and so does two
+  issues in one working copy

@@ -275,8 +275,9 @@ weekly progress update instead of planning a new sprint.
    ## Cadence
    - Progress updates posted here as comments (weekly, or when status changes)
    - Definition of done for the sprint: <the flow> works end-to-end,
-     demonstrated (link a recording/screenshot/e2e report), and the
-     verification queue is clear on the deployed version
+     demonstrated (link a recording/screenshot/e2e report), and every
+     verification row is carried to the release issue and checked on the
+     released version by the post-release pass (`/release-verify`)
 
    ## Status
    🟢 on track | 🟡 at risk | 🔴 blocked — updated in weekly comments
@@ -424,7 +425,10 @@ weekly progress update instead of planning a new sprint.
   `needs-verification` PR wait for its check before merging, and never
   report a merged-but-unverified issue as blocked or not done — it is
   *shipped, awaiting verification*, with its row saying what and where.
-  The only hold is an item recorded nowhere (`_shared/verification.md`)
+  An item recorded nowhere is a requested change from `/reviewer-pr`;
+  `/merge-steward` never holds for verification, and `/release-verify`
+  catches anything unrecorded before the post-release pass
+  (`_shared/verification.md`)
 - Every verification item has exactly one queue home — this umbrella's
   queue for issues in the sprint, the repo's verification issue for
   everything else — and a sprint never closes with rows that went nowhere

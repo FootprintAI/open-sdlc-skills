@@ -15,7 +15,12 @@ no "works locally" ambiguity. What runs remotely is what git says.
 
 **Input**: What to deploy and where (e.g., `/devops:deploy api to demo`,
 `/devops:deploy frontend to prod`). Default environment is **demo**; `prod`
-is never a default.
+is never a default. What deploys is a commit; a release tag names one
+(`/devops:deploy api to dev deploying vX.Y.Z` resolves to
+`git rev-list -n1 vX.Y.Z`). If the target already runs that exact commit,
+nothing is redeployed: post the deploy record naming the tag against the
+running commit (step 6) and stop — that record is what `/release-verify`
+reads.
 
 Mode: `/devops:deploy teardown <env>` deletes a container that was created
 for a verification pass (step 8). It applies only to per-pass containers,
@@ -123,8 +128,14 @@ a prod backend.
    where the team reads what version each rung is running, and step 7 needs
    that record. If the repo has an open **verification issue**
    (`_shared/verification.md` — label `verification`), it is a queue home
-   too: post the same record there. A deploy never waits for queue rows
-   to be checked; it is what makes them checkable.
+   too: post the same record there. If an open **release issue** exists
+   (`epic` + `release`, from `/release-verify`), post the record there as
+   well — it is a ledger, not a queue home, so it has no rows to flip.
+   When the deploy was asked for by tag, the record names the tag and its
+   commit (`vX.Y.Z` = `<sha>`); a record whose commit equals the tag's
+   commit is the one `/release-verify released` needs, whether or not
+   anything was redeployed to produce it. A deploy never waits for queue
+   rows to be checked; it is what makes them checkable.
 
 7. **Open the verification window on the sprint umbrella**
 
@@ -175,6 +186,11 @@ a prod backend.
    - Then hand off to `/qa-sprint-verify`. Do not verify the queue's issues
      yourself item by item, and do not redeploy while a pass is running — a
      verification pass split across two versions proves nothing about either
+   - When the deploy is of a **release tag**, the pass is the post-release
+     one: `/release-cut` hands the tag to `/release-verify released --tag
+     vX.Y.Z --env <env>`, which reads your record and triggers that same
+     single `/qa-sprint-verify` pass — one pass either way, never two. Do
+     not start a second pass yourself
 
    For **prod** deploys, the same applies for queue items flagged
    `demo + prod`; the prod pass covers only those.

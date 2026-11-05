@@ -1,6 +1,6 @@
 ---
 name: "Team: Sprint Cycle"
-description: Drive a complete sprint cycle end to end by chaining five roles and enforcing the hand-off between them. A project manager scopes the sprint first (umbrella issue + prioritized, flow-first child issues, per the /pm-sprint-delivery contract), engineers automatically implement every scoped issue (each routed to a Claude model tier — model:sonnet / model:opus / model:fable label + rationale — implemented one worktree per issue under that model via the /engineer-implement contract), DevOps releases the cycle's merged work to the dev environment via the /devops-deploy contract, QA verifies the cycle's needs-verification issues in one batched pass against that single deployed version via the /qa-sprint-verify contract, and once the PM closes the cycle a release manager cuts the release — tag on the codebase and GitHub, release notes, and the release image build workflow triggered — via the /release-cut contract. Pair with /loop for a self-running cycle — which refuses to start while the umbrella has open questions a human hasn't answered, and parks (never guesses) any question found mid-run.
+description: Drive a complete sprint cycle end to end by chaining five roles and enforcing the hand-off between them. A project manager scopes the sprint first (umbrella issue + prioritized, flow-first child issues, per the /pm-sprint-delivery contract), engineers automatically implement every scoped issue (each routed to a Claude model tier — model:sonnet / model:opus / model:fable label + rationale — implemented one worktree per issue under that model via the /engineer-implement contract), DevOps releases the cycle's merged work to the dev environment via the /devops-deploy contract, once the PM closes the cycle on a green dev deploy a release manager cuts the release — tag on the codebase and GitHub, release notes, and the release image build workflow triggered once — via the /release-cut contract, and QA then verifies the cycle's needs-verification issues in one batched post-release pass against that released version via /release-verify → /qa-sprint-verify; a failure ships as the next patch release, never a moved tag. Pair with /loop for a self-running cycle — which refuses to start while the umbrella has open questions a human hasn't answered, and parks (never guesses) any question found mid-run.
 category: Team
 tags: [team, sprint, pm, engineer, devops, qa, verification, release, umbrella-issue, model-routing, worktree, deploy, tag, loop]
 ---
@@ -29,22 +29,25 @@ between each:
    `/engineer-implement` contract, and tracked back on the umbrella.
 3. **DevOps releases to dev** — once the scope's PRs merge, the cycle's
    result is deployed to the dev environment via the `/devops-deploy`
-   contract and verified there.
-4. **QA verifies the cycle in one batch** — the issues CI couldn't prove
-   done are verified together against that one deployed version via the
-   `/qa-sprint-verify` contract, never one issue at a time.
-5. **Release manager cuts the release** — once the PM closes the cycle on
-   a verified dev release, the release manager voice of this skill cuts a
+   contract and its health checked there.
+4. **Release manager cuts the release** — once the PM closes the cycle on
+   a green dev deploy, the release manager voice of this skill cuts a
    real release via the `/release-cut` contract: semver tag pushed to the
    codebase and GitHub, release notes drafted from the cycle's merged
-   PRs, and the release image build workflow triggered.
+   PRs, and the release image build workflow triggered — once per
+   version.
+5. **QA verifies what shipped, after the release** — the issues CI
+   couldn't prove done are verified together against the released
+   version via `/release-verify released` → `/qa-sprint-verify`, never
+   one issue at a time and never as a gate on the cut. A failure is fixed
+   on `main` and shipped as the next patch release; the tag never moves.
 
 The umbrella issue is the contract across all five stages: the PM writes
 scope and the verification queue onto it, engineers pull work off it and
 report PRs back, DevOps posts the dev deploy's commit + URL (which flips
-queue items to *ready to verify*), QA posts the batched pass's results
-stamped with that commit, and the release manager posts the cut tag +
-build result as the cycle's final entry.
+queue items to *ready to verify*), the release manager posts the cut tag +
+build result, and QA's post-release pass — tracked on the release issue —
+posts its results stamped with the tag commit as the cycle's final entry.
 
 **One version on dev per cycle.** The dev environment is shared, so it
 carries the cycle's deployed commit and nothing else: no per-issue
@@ -54,38 +57,41 @@ commit.
 
 **Merge and ship first; verify after.** A `needs-verification` row is a
 follow-up, not a gate on the stages before it. The engineer stage opens
-the PR with its verify steps, `/merge-steward` lands it as soon as it is
-approved and green, and the DevOps stage deploys whatever merged — none
-of them waits for a check that, by definition, can only happen once the
-change is deployed. The only thing that holds a PR is a verification item
-recorded nowhere (`_shared/verification.md`). Between the merge and the
-pass the issue is **shipped, awaiting verification** — the umbrella shows
-it as that, not as blocked and not as done.
+the PR with its verify steps, `/reviewer-pr` requests changes if the item
+is recorded nowhere, `/merge-steward` lands it as soon as it is approved
+and green (it reads CI and reviews, never verification state), the DevOps
+stage deploys whatever merged, and the release stage cuts whatever
+deployed — none of them waits for a check that, by definition, can only
+happen once the change is released (`_shared/verification.md`). Between
+the merge and the post-release pass the issue is **shipped, awaiting
+verification** — the umbrella shows it as that, not as blocked and not as
+done.
 
 **Input**: Run bare (`/team-sprint-cycle`) to advance the cycle one step —
 each invocation does the next thing the cycle needs: scope it if there is
 no open sprint, implement the next scoped items if there is, deploy to dev
-once the scope's PRs are merged, run the batched verification pass on that
-deployed version, close it once the queue is clear, then cut the release.
+once the scope's PRs are merged, close it once dev is green, cut the
+release, then run the post-release verification pass on that tag.
 Modes to jump to one stage: `scope` (PM stage only), `implement` (engineer
-stage only), `deploy` (DevOps stage only), `verify` (batched verification
-pass only), `close` (PM close-out only), `release` (release manager stage
+stage only), `deploy` (DevOps stage only), `close` (PM close-out only),
+`release` (release manager stage only), `verify` (post-release pass
 only), `status` (report the umbrella's state). Optionally `--repo owner/name`, `--max N`
 implementations per invocation (default 2), `--env` for the dev/demo
 target (defaults to whatever `/devops-deploy` calls its non-prod rung —
 `dev` or `demo`), and `--auto-release` to let the release stage cut and
-publish without pausing for confirmation (off by default — see step 9).
+publish without pausing for confirmation (off by default — see step 8).
 
 **Continuous mode**: pair with the loop harness —
 `/loop 15m /team-sprint-cycle` — and the cycle runs itself: the PM stage
 scopes newly-ready issues in as they arrive (e.g., defects filed by
 `/qa-issue-report`), the engineer stage works the scope in priority order,
-DevOps releases merged work to dev as it lands, QA verifies each deploy's
-batch of `needs-verification` issues against that one commit, the umbrella
-stays current, a finished-deployed-and-verified scope triggers close-out,
-and closing hands straight to the release manager stage — which cuts the release once
+DevOps releases merged work to dev as it lands, the umbrella stays
+current, a finished-and-deployed scope triggers close-out, closing hands
+straight to the release manager stage — which cuts the release once
 you've turned on `--auto-release`, or otherwise leaves a confirmation
-waiting for you before the next `/loop` tick.
+waiting for you before the next `/loop` tick — and the tag hands to the
+post-release pass, which verifies the cycle's `needs-verification` issues
+against that one released commit.
 
 **The gate before continuous mode: no open questions.** An unattended
 cycle has nobody to ask, so everything it would have asked is asked
@@ -156,8 +162,8 @@ underpowered.
      the `needs-verification` label, **Verify on `<env>`** steps in its
      body, and a row on the umbrella's verification queue (⏳ awaiting
      deploy). This happens at scoping time, not when the issue merges —
-     step 7 can only batch what was flagged. The flag changes when the
-     issue is *checked*, never when its PR merges
+     step 9's post-release pass can only batch what was flagged. The flag
+     changes when the issue is *checked*, never when its PR merges
    - An issue is scope-eligible only when it is **ready**: not blocked
      (a `Blocked by` whose PR is merged or at least open counts as ready
      — the engineer stage stacks on an open one; a blocker with no PR
@@ -253,6 +259,17 @@ underpowered.
    - Remove each worktree once its PR is open (`git worktree remove`) —
      the branch lives on the remote; the worktree does not outlive the
      invocation
+   - **PR open is the hand-off, not CI green.** An engineer agent reports
+     its PR opened with `CI: pending` and this stage moves to the next
+     ready issue; nothing in this stage watches checks. CI is read by
+     `/merge-steward`'s loop, which hands a red head back on the PR
+   - **Hand-backs before new issues.** At the start of this stage, list
+     the sprint's open PRs carrying a `/merge-steward` `CI red on
+     <head>` (or unresolved-conflict) comment newer than the PR's last
+     push, and dispatch `/engineer-implement fix <M>` for each under the
+     issue's routed model — counting against `--max` — before any new
+     issue is started. A second red hand-back on the same PR under the
+     same tier is a stall for step 4
    - **A question found mid-implementation parks the issue; it does not
      stall the loop.** When the engineer reports it would have to guess
      (criteria turn out untestable, the design doc is silent on a
@@ -296,13 +313,16 @@ underpowered.
      **Status:** 🟢/🟡/🔴
      **Merged:** #42 (PR #45)
      **In review:** #43 → PR #46 (waiting on /reviewer-pr)
+     **CI pending / red:** #44 → PR #47 pending · #45 → PR #48 red, fix
+       dispatched (`agent-9b2e-opus`)
      **In flight:** #41 (`model:fable`, escalated from opus — <why>)
      **Scoped in:** #47 (new defect from /qa-issue-report, `model:sonnet`)
-     **Dev release:** <not yet | `<commit>` @ `<dev-url>`, verified <date>>
+     **Dev deploy:** <not yet | `<commit>` @ `<dev-url>`, health green <date>>
      **Shipped, awaiting verification:** <none | #42 ⏳ (merged, next
-       deploy), #44 🔍 on `<commit>` (next pass)>
-     **Verification:** <queue empty | 3 ✅ on `<commit>`, 1 ❌ (defect #31)>
+       deploy), #44 🔍 on `<commit>` (post-release pass)>
      **Cut release:** <not yet | `vX.Y.Z` tagged, build `<passed|failed>`>
+     **Post-release verification:** <not yet | release #N: 3 ✅ on
+       `<tag-commit>`, 1 ❌ (defect #31 → vX.Y.Z+1)>
      **Waiting on a decision:** <none | #15 (2d, architect — default: fail
        loudly), #17 (1d, devops)>
      **Stalled:** none
@@ -336,103 +356,59 @@ underpowered.
      and mark which verification-queue items that commit contains
      (⏳ → 🔍) per the `/devops-deploy` contract — on the umbrella and
      on the repo's open verification issue, if one exists, since the
-     environment carries both. This is the evidence step 7 verifies and
-     step 8's closing summary points to
+     environment carries both. This is the evidence step 7's closing
+     summary points to and step 9's pass runs against (the tag commit is
+     this commit when nothing merges in between)
    - **No deployable service** (library, CLI-only project): skip this
      step, say so explicitly in the umbrella comment and the closing
      summary, and move straight to close
-   - A failed deploy or failed verification **blocks closing the
-     cycle** — report it red, fix forward or roll back per
-     `/devops-deploy`'s own guardrails, and only proceed once dev is
-     green (or the skip case above applies)
+   - A failed deploy (red health check) **blocks closing the cycle** —
+     report it red, fix forward or roll back per `/devops-deploy`'s own
+     guardrails, and only proceed once dev is green (or the skip case
+     above applies). Unchecked verification rows do not: they are checked
+     after the release (step 9)
 
    In `deploy` mode, stop here and report the dev release.
 
-7. **Verification stage — one batched pass on the deployed version (mode:
-   verify, or automatically once the dev deploy is green)**
+7. **Close the cycle (mode: close, or when Phase 1 is done and the dev
+   deploy is green — or the deploy was explicitly skipped per step 6)**
 
-   The cycle's `needs-verification` issues have been waiting on exactly
-   this: a known version on a shared environment. Verify them together,
-   never as they merge:
-
-   - Run `/qa-sprint-verify --env dev` against the commit step 6
-     deployed. One pass, one commit, every 🔍 item in it — read from the
-     umbrella's queue *and* from the repo's open verification issue
-     (`_shared/verification.md`): rows that merged outside this sprint
-     ride the same deploy and are checked in the same pass
-   - Results land on the umbrella and on each child issue, stamped with
-     the commit; ❌ items become defects via `/qa-issue-report`,
-     cross-linked to the issue they came from
-   - ❌ and ⚠️ items are **cycle scope again**, not a closing footnote:
-     scope the filed defect into this cycle if it fits (route it a
-     `model:*` tier per step 2 and work it through step 3), otherwise
-     carry it explicitly with the reason. A blocker-severity failed
-     verification does not carry — it gets fixed, redeployed, and
-     re-verified before close
-   - ⏳ items merged after the deployed commit are not verifiable here.
-     Either deploy again (back to step 6, which re-opens the window on
-     the new commit) or carry them — to the next cycle's umbrella, or to
-     the repo's verification issue when this one closes first — never
-     verify them against a version that doesn't contain them, and never
-     leave them with no queue home
-   - **Empty queue** (nothing needed a deployed environment this cycle):
-     say so on the umbrella and move on — an empty queue is a legitimate
-     result, an unchecked one is not
-   - **Docs on the same commit.** While the environment is up on a known
-     version, run `/writer-docs audit --env dev`: it diffs every manual
-     page's sources since the commit it was last verified on, re-runs the
-     README's commands, and sweeps this cycle's merged PRs for `Docs
-     impact:` lines. Stale pages become `docs` issues; those caused by
-     *this cycle's* merged work are cycle scope (route them per step 2,
-     work them through step 3 — the writer requests its screenshots from
-     `/qa-e2e-test` against this same deployed commit, so figures and
-     verification results carry one version). Stale pages from older
-     drift carry to the next cycle with the audit as evidence. The
-     environment is not torn down until the writer's screenshot requests
-     for this cycle's pages are ✅ or ⚠️
-   - **Per-pass environment**: if step 6 provisioned the environment for
-     this pass (its deploy comment says so), the pass is what releases
-     it — once `/qa-sprint-verify` reports the results posted and every
-     ❌ filed, run `/devops-deploy teardown dev`. Not before: a ❌ whose
-     defect still needs a repro screenshot, or an item being re-checked,
-     keeps the environment up. A persistent shared dev rung is left
-     running, as it always was
-
-   In `verify` mode, stop here and report the pass.
-
-8. **Close the cycle (mode: close, or when Phase 1 is done, the dev
-   release is verified, and the verification queue is clear — or the
-   deploy was explicitly skipped per step 6)**
-
-   Close out as the PM:
+   Close out as the PM. Closing says "the scope merged and runs on dev";
+   it does not say "verified" — that is the post-release pass in step 9,
+   and `needs-verification` rows still ⏳/🔍 do **not** hold the close:
 
    - Verify every Phase 1 issue is closed via a merged PR, or has an
      explicit carry-over note (what remains and why)
-   - Verify the verification queue is clear: every row ✅ with its commit,
-     ❌ with a filed defect and a decision, or ⏭ waived with the user's
-     say-so. Rows still ⏳ or 🔍 block the close — that is merged work
-     nobody checked
+   - Verify the dev deploy of `main` from step 6 is green (health check on
+     the real route, commit + URL recorded on the umbrella), or the
+     no-deployable-service note is there
+   - List the verification queue as it stands — rows ⏳/🔍 with the commit
+     each needs, rows already ✅/❌ — under **Carried to release
+     verification**. The cut carries them; `/release-verify` collects
+     every row whose merge is in the release window, whether its umbrella
+     is open or closed. A row ⏳ whose merge commit is not in the deployed
+     commit joins the next release instead; say which
    - Post a closing summary: shipped vs. scoped, escalations that
      happened (and what that says about the routing rubric), carry-overs,
      the dev deploy evidence from step 6 (commit + URL, or the
-     no-deployable-service note), and the step 7 pass result (commit,
-     ✅/❌/⚠️ counts, defects filed)
+     no-deployable-service note), and the carried verification rows
    - Close the umbrella if this skill created it; if it belongs to a
      standalone `/pm-sprint-delivery` run, post the summary as a comment
      and leave closing to that flow
-   - Once closed, hand straight to step 9 — a closed cycle without a cut
+   - Once closed, hand straight to step 8 — a closed cycle without a cut
      release is an incomplete cycle, not a finished one
 
-9. **Release manager stage — cut the release (mode: release, or
-   automatically once the cycle closes on a verified dev release)**
+8. **Release manager stage — cut the release (mode: release, or
+   automatically once the cycle closes on a green dev deploy)**
 
    Switch to the release manager voice and follow the `/release-cut`
    contract in full:
 
-   - **Precondition**: the cycle's umbrella is closed, its DevOps stage
-     (step 6) posted a verified dev release for the commit being
-     released, and its verification queue (step 7) is clear — refuse to
-     cut against an unclosed, undeployed, or unverified cycle
+   - **Precondition**: the cycle's umbrella is closed and its DevOps stage
+     (step 6) posted a green dev deploy of the commit being released (or
+     the no-deployable-service note) — refuse to cut against an unclosed
+     or undeployed cycle. Verification is **not** a precondition: open
+     rows ride the release to step 9
    - Scope the release to what this cycle actually merged: find the last
      tag, infer the semver bump (major/minor/patch) from the scoped
      issues' labels and PR content, and draft categorized release notes
@@ -445,18 +421,77 @@ underpowered.
      assumed), skip the pause but still record the version and rationale
      for later audit
    - Tag the codebase (`git tag` + `git push`) and GitHub
-     (`gh release create`) at the **same commit** — verify they match
+     (`gh release create`) at the **same commit** — verify they match.
+     One tag, one build per version: a version is never retagged or
+     rebuilt
    - Trigger the release image build workflow (or confirm a tag-push
      trigger already started it), watch it to completion, and report
      pass/fail — a red build makes this a **failed** release, not a
      tagged one
    - Comment the cut (version, tag URL, release URL, build run result)
-     on the umbrella issue as the cycle's final entry
+     on the umbrella issue, then hand the tag to step 9
 
    In `release` mode, this is the only stage that runs; it still enforces
-   the precondition above. The next invocation starts the next cycle's PM
-   stage from whatever is ready — carry-overs and last cycle's Phase 2
-   first (waterfall in the small, iterative in the large).
+   the precondition above.
+
+9. **Post-release verification — one batched pass on the released
+   version (mode: verify, or automatically once the tag exists)**
+
+   The cycle's `needs-verification` issues have been waiting on exactly
+   this: a known, released version on a shared environment. Verify them
+   together, never as they merge, and only after the cut:
+
+   - Run `/release-verify released --tag vX.Y.Z --env dev`. It reads
+     `/devops-deploy`'s record for the tag's commit on dev — step 6's
+     deploy *is* that record when nothing merged between it and the cut;
+     otherwise it asks DevOps to deploy the tag first — and triggers the
+     one `/qa-sprint-verify --env dev --commit <tag-commit>` pass. One
+     pass, one commit, every 🔍 item in it, read from the umbrella's queue
+     *and* from the repo's open verification issue
+     (`_shared/verification.md`): rows that merged outside this sprint
+     ride the same release and are checked in the same pass
+   - Results land on the queue homes and on each child issue, stamped
+     with the tag commit; `/release-verify` mirrors them on the release
+     issue; ❌ items become defects via `/qa-issue-report`, cross-linked to
+     the issue they came from and marked `Found after release`
+   - **A ❌ never moves the tag.** The defect is **next cycle's scope**
+     (route it a `model:*` tier per step 2, work it through step 3), and
+     the fix ships as the next patch release `vX.Y.Z+1` — the next
+     invocation's PM stage opens that cycle with the defect first. A
+     blocker-severity ❌ is reported as such on the release issue; whether
+     to roll prod back to the previous tag is the human's call, outside
+     this skill
+   - Items merged after the tag commit are not verifiable here; they are
+     in the next release's window. Never verify them against a version
+     that doesn't contain them, and never leave them with no queue home
+   - **Empty ledger** (nothing in the release needed a deployed
+     environment): `/release-verify` says so and closes the release issue
+     — an empty ledger is a legitimate result, an unchecked one is not
+   - **Docs on the same commit.** While the environment is up on the
+     released version, run `/writer-docs audit --env dev`: it diffs every
+     manual page's sources since the commit it was last verified on,
+     re-runs the README's commands, and sweeps this cycle's merged PRs for
+     `Docs impact:` lines. Stale pages become `docs` issues; those caused
+     by *this cycle's* merged work go into the next cycle's scope with the
+     defects (the writer requests its screenshots from `/qa-e2e-test`
+     against this same released commit, so figures and verification
+     results carry one version). The environment is not torn down until
+     the writer's screenshot requests for this cycle's pages are ✅ or ⚠️
+   - **Per-pass environment**: if step 6 provisioned the environment for
+     this pass (its deploy comment says so), the pass is what releases
+     it — once `/qa-sprint-verify` reports the results posted and every
+     ❌ filed, run `/devops-deploy teardown dev`. Not before: a ❌ whose
+     defect still needs a repro screenshot, or an item being re-checked,
+     keeps the environment up. A persistent shared dev rung is left
+     running, as it always was
+   - The cycle's last umbrella comment is the release issue's summary:
+     tag, env, ✅/❌ counts on the tag commit, defects filed, and whether
+     a patch release is now owed
+
+   In `verify` mode, stop here and report the pass. The next invocation
+   starts the next cycle's PM stage from whatever is ready — post-release
+   defects first, then carry-overs and last cycle's Phase 2 (waterfall in
+   the small, iterative in the large).
 
 **This cycle stops at dev — prod is a separate, manual step**
 
@@ -538,13 +573,18 @@ answers.
   `/devops-deploy <service> to prod` call outside the cycle, run by the
   user when they choose to, never something this skill (or `--auto-release`)
   triggers on its own
-- The cycle does not close on merged-but-undeployed or
-  deployed-but-unverified work — a green dev release (or an explicit
-  no-deployable-service note) plus a clear verification queue is required
-  before close, same as a green test suite is required before a PR ships
-- The release stage never runs ahead of a closed, dev-verified cycle —
-  cutting a tag against an open umbrella or an unverified dev deploy is
-  refused, not worked around
+- The cycle does not close on merged-but-undeployed work — a green dev
+  deploy (or an explicit no-deployable-service note) is required before
+  close, same as a green test suite is required before a PR ships. It
+  does close on deployed-but-unverified work: verification is the
+  post-release pass, and its rows are carried, listed, never silently
+  dropped
+- The release stage never runs ahead of a closed cycle with a green dev
+  deploy — cutting a tag against an open umbrella or a red dev deploy is
+  refused, not worked around. It never waits on verification rows
+- One tag, one build per version. A ❌ from the post-release pass is a
+  defect and a patch release (`vX.Y.Z+1`), never a moved, deleted or
+  rebuilt tag
 - Publishing pauses for confirmation by default; `--auto-release` is only
   honored when the user set it explicitly for this run — never turned on
   by inference, and never carried forward from one loop to the next
@@ -554,6 +594,6 @@ answers.
   may not
 - A stalled fable-tier attempt gets flagged to humans, not retried in a
   loop — every invocation must terminate
-- This skill runs the PM→engineer→DevOps(dev)→QA(verify)→release lane of the
-  waterfall; product definition, architecture, PR review, prod deploy,
-  and QA remain their own roles' skills
+- This skill runs the PM→engineer→DevOps(dev)→release→QA(post-release
+  verify) lane of the waterfall; product definition, architecture, PR
+  review, prod deploy, and QA remain their own roles' skills

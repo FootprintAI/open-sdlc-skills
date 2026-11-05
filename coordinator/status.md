@@ -21,10 +21,10 @@ from the PRD** — waterfall in the small, iterative in the large.
 | 2 | Design | `/architect-design` | Design doc in `docs/architecture/` with status `accepted`, contracts named |
 | 3 | Plan | `/pm-sprint-delivery` | Sprint umbrella issue open, P0 stories phased and assigned |
 | 4 | Build | `/engineer-implement` | Every Phase 1 child issue has a linked PR |
-| 5 | Review | `/reviewer-pr` → `/merge-steward` | Every PR approved and merged; umbrella checkboxes ticked. Pending verification is not part of this gate — a `needs-verification` PR merges once its item is recorded (`_shared/verification.md`) |
+| 5 | Review | `/reviewer-pr` → `/merge-steward` | Every PR approved and merged; umbrella checkboxes ticked. Pending verification is not part of this gate — `/reviewer-pr` checks that a `needs-verification` item is recorded (`_shared/verification.md`); `/merge-steward` reads CI and reviews only and never holds for verification |
 | 6 | Deploy | `/devops-deploy` | Deployed commit recorded on the umbrella/release issue (and the open verification issue), health verified, verification-queue rows in that commit flipped to 🔍 on every queue home |
-| 7 | Prove | `/qa-sprint-verify` + `/qa-e2e-test` | One batched pass on the deployed commit: every verification-queue row — on the umbrella and the verification issue — ✅ (with that commit), ❌ with a filed defect, or ⏭ waived; `e2e/E2E-REPORT.md` with screenshots for the UI flows |
-| 8 | Ship | `/release-cut` | Semver tag on the codebase and GitHub at the same commit, GitHub Release published |
+| 7 | Ship | `/release-cut` | Semver tag on the codebase and GitHub at the same commit, GitHub Release published, image built once; the tag handed to `/release-verify` |
+| 8 | Prove | `/release-verify` → `/qa-sprint-verify` + `/qa-e2e-test` | One batched post-release pass on the tag commit: every verification-queue row — on the umbrella and the verification issue — ✅ (with that commit), ❌ with a filed defect (→ patch release), or ⏭ waived, mirrored on the release issue; `e2e/E2E-REPORT.md` with screenshots for the UI flows |
 | — | **Cycle close** | coordinator | Gates 1–8 all passed → close cycle, **re-trigger stage 1** for the next PRD |
 
 (`/qa-unit-test` and `/qa-integration-test` back stage 4 rather than gating
@@ -53,18 +53,18 @@ repo, what is waiting on a human, what runs on its own — use
    ls e2e/E2E-REPORT.md e2e/screenshots/ 2>/dev/null
    ```
 
-   The stage is the **first gate that fails**, scanning 1→7. Claims don't
+   The stage is the **first gate that fails**, scanning 1→8. Claims don't
    count — a PRD with `Status: draft` fails gate 1 even if everyone
-   "agrees" on it; an e2e report with no screenshots fails gate 7, and so
-   does a verification queue with rows still ⏳/🔍 or a ✅ row that doesn't
-   name the commit it was verified on.
+   "agrees" on it; an e2e report with no screenshots fails gate 8, and so
+   does a release whose ledger has rows still ⏳/🔍 or a ✅ row that
+   doesn't name the tag commit it was verified on.
 
 2. **Report the position (mode: status, the default)**
 
    ```markdown
    # Project status — cycle N
 
-   **Current stage:** 4/7 Build
+   **Current stage:** 4/8 Build
    **Cycle goal:** <from the PRD / sprint umbrella>
 
    | Stage | Gate | Evidence |
@@ -77,7 +77,7 @@ repo, what is waiting on a human, what runs on its own — use
    | ...      |    |   |
 
    **Shipped, awaiting verification:** <#12 ⏳ (next deploy), #15 🔍 on
-   `abc1234` (next pass) — or "none"; stage 6–7 in progress, not blocked>
+   `abc1234` (post-release pass) — or "none"; stage 6–8 in progress, not blocked>
    **Blocked/stalled:** <issues with no activity, PRs waiting on review —
    an overdue verification window per `_shared/verification.md` belongs
    here; a fresh one does not>
@@ -135,15 +135,17 @@ repo, what is waiting on a human, what runs on its own — use
   five parallel next steps is not coordinating
 - This role reads, reports, gates, and hands off — it does not write PRDs,
   code, or designs itself; it names which role/skill does
-- Cycle close requires ALL gates including e2e proof — "deployed" without
-  the verification pass and e2e report is stage 6, not done
-- Gate 7 is one batched pass against one deployed commit. Per-issue
+- Cycle close requires ALL gates including e2e proof — "tagged" without
+  the post-release pass and e2e report is stage 7, not done
+- Gate 8 is one batched pass against the released tag commit. Per-issue
   verification against a shifting dev environment does not pass the gate,
   however many issues get individually blessed — the evidence is a pass
-  that names a single commit
-- Gates 5 and 6 never wait on gate 7: merged-but-unverified work is
+  that names the tag's commit. A ❌ there is a defect and a patch release,
+  never a moved tag
+- Gates 5, 6 and 7 never wait on gate 8: merged-but-unverified work is
   *shipped, awaiting verification*, reported as that state — not as
-  blocked, not as done — and never a reason to hold a merge or a deploy
+  blocked, not as done — and never a reason to hold a merge, a deploy or
+  a cut
 - Status updates and stage transitions are posted on the GitHub umbrella
   issue — coordination that only happened in chat didn't happen
 - When re-triggering the PRD, carried-over and deferred items are proposed

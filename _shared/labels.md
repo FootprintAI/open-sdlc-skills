@@ -1,7 +1,7 @@
 # Notice: every issue carries one type label
 
 **Applies to every skill that opens an issue** (GitHub or GitLab) — product
-stories, sprint umbrellas and child issues, QA defects, release candidates,
+stories, sprint umbrellas and child issues, QA defects, release issues,
 docs and CI work. The label says at a glance what an issue *is*.
 
 ## Type labels (exactly one per issue)
@@ -10,7 +10,7 @@ docs and CI work. The label says at a glance what an issue *is*.
 |---|---|---|
 | `bug` | a defect — behavior differs from what was specified | `/qa-issue-report` |
 | `feature-request` | new or changed user-visible capability | `/product-define`, `/pm-sprint-delivery` |
-| `epic` | an umbrella that groups child issues (sprint umbrella, release candidate) | `/pm-sprint-delivery`, `/release-cut` |
+| `epic` | an umbrella that groups child issues (sprint umbrella, release issue) | `/pm-sprint-delivery`, `/release-verify` |
 | `ci` | pipeline, build, test-infra, release-workflow work | any |
 | `docs` | documentation only | any |
 | `security` | vulnerability, hardening, compliance gap | any |
@@ -19,7 +19,7 @@ docs and CI work. The label says at a glance what an issue *is*.
 Existing workflow labels (`sprint`, `release`, `product`, `verification`,
 `needs-verification`, `merge-hold`, `model:*`, `runtime:*`, `size:*`) are
 **additional**, not replacements — an umbrella is `epic` + `sprint`; a
-release candidate is `epic` + `release`; a dedicated verification issue is
+release issue (`/release-verify`) is `epic` + `release`; a dedicated verification issue is
 `epic` + `verification`.
 
 `needs-verification` goes on an **issue** whose acceptance criteria CI

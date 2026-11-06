@@ -211,7 +211,8 @@ inference, and never carried from one loop to the next.
    | Any reviewer's latest review is "changes requested", or a GitLab `Verdict: changes requested` note with no later approve verdict | **Changes requested** — the author's |
    | No approval, or the only approval is from the PR's author identity (same `${who}` — a shared account approving itself is not a review). Where a required approval-gate check exists (step 1), that check not yet passing on the head | **Waiting on review** — `/reviewer-pr`, or whoever the gate names |
    | Approved, but the approved commit is not the head, and a commit after it was pushed by someone other than this role's clean syncs | **Stale approval** — back to `/reviewer-pr` for the new commits |
-   | Linked issue parked on a ❓ question, or a `Blocked by #N` whose PR is not merged | **Waiting on dependency** |
+   | Linked issue parked on a ❓ question, or a `Blocked by #N` whose PR is not merged — **unless** #N's contract slice is already merged to the base (its generated client is on base), which satisfies the dependency for a stub-built PR | **Waiting on dependency** |
+   | Base PR merged by someone other than this session, or the base branch is gone — a stacked child still carrying the parent's commits (retarget needed, whatever its approval) | **Retarget** — step 9's rule applies now: `gh pr edit <child> --base <base>` and `git rebase --onto origin/<base> <merged-head-sha> <child-branch>`, pushed with lease. It is a sync, so the approval rule applies to the result |
    | Approved, conflicts with base (`mergeable: CONFLICTING`) | **Needs resolution** — step 6 |
    | Approved, behind base, no conflicts | **Needs sync** — step 6 |
    | Approved, up to date (or the repo doesn't require it), CI pending | **Waiting on CI** — next tick |

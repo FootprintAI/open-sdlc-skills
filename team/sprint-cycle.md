@@ -167,7 +167,10 @@ underpowered.
    - An issue is scope-eligible only when it is **ready**: not blocked
      (a `Blocked by` whose PR is merged or at least open counts as ready
      — the engineer stage stacks on an open one; a blocker with no PR
-     does not), actionable (acceptance criteria or a repro path), **no open
+     counts as ready only when its **contract slice is merged** (generated
+     client + stub, per `/architect-design`), since the engineer builds
+     against that per `/engineer-implement`'s stub rule; a blocker with
+     neither a PR nor a merged contract does not), actionable (acceptance criteria or a repro path), **no open
      question** (no `needs-decision` label, no ❓ row for it on the
      umbrella), not already in progress, and an engineering task rather
      than an open product/design question. Missing criteria or an
@@ -241,8 +244,10 @@ underpowered.
      git worktree add ../<repo>-issue-<B> -b feat/<B>-<slug> feat/<A>-<slug>
      ```
 
-     Wait for `main` only when A has no PR yet — then B is not ready, and
-     the PM stage should not have scoped it
+     Wait for `main` only when A has neither a PR nor a merged contract
+     slice — then B is not ready, and the PM stage should not have scoped
+     it. With A's contract merged, B builds against its generated client
+     and stub instead (see `/engineer-implement`, "Build against a stub")
    - Each implementation follows the `/engineer-implement` contract in
      full: **claim the ticket first** (`${who}-${model} is starting
      processing it`, e.g. `agent-7f3a1c-opus`) — `${who}` is this

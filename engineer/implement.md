@@ -167,9 +167,14 @@ else. Someone else watches the gate:
      contracts it names; read the existing code around the change site
    - Confirm blockers are merged — or, if a blocker's PR is open but not
      merged yet, stack on its branch (step 3) rather than guessing at its
-     shape against `main`. A blocker with no PR at all means this issue
-     is not ready: say so on the issue and stop — implementing on top of
-     an imagined dependency wastes the week
+     shape against `main`. A blocker with no PR at all is not a stop if
+     its **contract slice is merged** (the `.proto`/schema/interface and
+     its generated client, per `/architect-design`'s contract-first rule):
+     build against that generated client or a stub at the seam, as
+     described under **Build against a stub**, and say so on the issue.
+     Stop and flag the issue only when there is no merged contract to
+     build against — implementing on top of an imagined interface wastes
+     the week
 
 3. **Branch and set up**
 
@@ -188,6 +193,38 @@ else. Someone else watches the gate:
    git fetch origin feat/<blocker>-<slug>
    git checkout -b feat/<issue-number>-<short-slug> origin/feat/<blocker>-<slug>
    ```
+
+   **Build against a stub, not a guess** — when the blocker's contract is
+   merged but its implementation is not, do not wait for it and do not
+   reimplement it. Depend on the contract only:
+
+   - **Depend on the generated client first.** The contract slice
+     (`/architect-design`) already ships the `.proto`, its generated
+     client, and a stub server behind it. Code against the generated
+     client; the swap from that stub to the real implementation happens
+     behind the seam in the blocker's own PR, so this PR needs no stub
+   - **A fake is for tests only.** Test doubles follow `qa/unit-test.md`
+     (a hand-written fake implementing the generated interface, never a
+     mock with expectations on the blocker's internals)
+   - **Production stub in this PR: the exception.** Only when the contract
+     slice merged without a stub server. Then mark it in code with the
+     blocker's issue, e.g. `// STUB until #<blocker>: replace with the
+     real <Service> client`, and list it in the PR body under `Stubs:`
+   - **Contract guard lives with the architect**, not in this PR: the
+     contract tests on both sides of the generated client
+     (`/architect-design`, Phase 1 test strategy) pin the seam. Do not
+     write a "contract test" here against a stub; it checks shape, not
+     behaviour
+   - **Removal is scheduled at PR-open.** Any `Stubs:` entry requires a
+     follow-up issue, opened in the same step as this PR, with
+     `**Blocked by:** #<blocker>` (the PM's form), so the normal flow
+     carries it. A stub that outlives its blocker is a defect
+
+   **Stack depth is a consequence, not a rule**: the WIP cap (`--wip`,
+   default 2) already bounds an owner to two open unmerged PRs, so a
+   stack is at most two PRs deep, counting unmerged PRs beneath yours. A
+   stack is one owner's chain: if the next link belongs to someone else,
+   the contract is cut out instead of stacked across the hand-off.
 
    Check the baseline is green BEFORE changing anything — never start from
    an unknown-red one. The cheap check is CI's own record of the branch
@@ -327,8 +364,9 @@ else. Someone else watches the gate:
    PR open (non-draft unless `--draft`), targeting `main` or the blocker
    branch it stacks on; body carries `Closes #N`, the summary, local test
    evidence, `CI: pending — <run link>`, and the `## Verify on` section
-   where owed; a CI run exists for the head; the issue comment above is
-   posted. *Not* part of done: CI green, review, merge, the issue closed,
+   where owed; a `Stubs:` entry, when present, has its follow-up removal
+   issue open with `Blocked by: #<blocker>`; a CI run exists for the head;
+   the issue comment above is posted. *Not* part of done: CI green, review, merge, the issue closed,
    the umbrella box ticked. Those are evidence other roles produce later,
    and the issue stays open until the PR merges (`Closes #N` closes it).
 

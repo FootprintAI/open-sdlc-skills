@@ -1,8 +1,6 @@
 # Containarium bot — what goes where
 
-Status: **draft**. Open question: is `Containarium-cloud` private? The rules
-below assume it is. If it is public, the cloud-side rules in section 2 are
-already exposed and this doc needs a rewrite before anything else ships.
+Status: **draft**. `Containarium-cloud` is private, so the split below holds.
 
 The bot is `@containarium <verb> <target>` — for example `start #123` or
 `review #45`. It is wired in `Containarium-cloud`. The skills it runs live in

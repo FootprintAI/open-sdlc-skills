@@ -64,3 +64,44 @@ Review these against the rules above. Do not move them without a decision:
   and customer names. Use synthetic values.
 - If a doc describes a cloud behavior, mark which repo owns it.
 - When unsure whether a detail is safe to publish, leave it out and ask.
+
+## 5. When the environment cannot use Containarium
+
+Containarium is optional for the planning, build, review and QA stages. The
+skills only need `gh` or `glab`. Use the fallback below when a runtime has no
+Containarium MCP server, no tracker connection, or no daemon.
+
+**Detection.** The runtime has no Containarium if `/devops-containarium-env`
+check reports capability 2 (control-plane MCP) or capability 3 (CLI) as
+missing, or if the run has no tracker connection (`tracker_*` tools are not
+bound). Do not create a connection to get around this.
+
+**What still runs, and how**
+
+| Stage | Skill | Without Containarium |
+|-------|-------|----------------------|
+| Implement | `/engineer-implement` | Local or CI run; tracker via `gh`/`glab`; claim comment posted by the run |
+| Review | `/reviewer-pr` | Verdict posted on the PR with `gh`/`glab` |
+| Verify | `/qa-verify` | Runs in a sandbox with no credentials; report posted on the PR |
+| Merge | `/merge-steward` | Scheduled run (`/loop`) or CI job; same merge rules |
+| Test | `/qa-unit-test`, `/qa-integration-test`, `/qa-e2e-test` | CI lanes or a local container runtime |
+| Release | `/release-cut` | Tag and GitHub release via `gh`/`glab` |
+| Deploy | `/devops-deploy` | **No fallback yet.** Needs a decision on the target (see below) |
+
+**Triggering without the bot.** Two options, in order of preference:
+
+1. **Run by hand or from CI.** Invoke the skill directly. No trigger layer is
+   needed, and the output is the same.
+2. **A GitHub Action that calls the same skills.** A comment such as
+   `/engineer start #123` or `/reviewer review #45` starts a job that runs the
+   matching skill. The job must use the same contracts and the same
+   permission rules as the bot: only collaborators with write access may
+   trigger it, and it never runs untrusted PR code with secrets. The
+   Action's own config lives in the public repo; the rules it enforces must
+   match section 2.
+
+**Open decision: deploy without Containarium.** `/devops-deploy` assumes
+Containarium. Before a fallback exists, pick the target: a plain SSH host, a
+managed platform, or a container registry plus orchestrator. Until then,
+deploys on a non-Containarium runtime are manual and must be recorded on the
+sprint umbrella the same way `/devops-deploy` records them.

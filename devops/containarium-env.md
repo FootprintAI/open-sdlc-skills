@@ -69,7 +69,7 @@ readiness report is posted; defaults to the newest open sprint umbrella).
 | 2 | Control-plane MCP | The Containarium MCP server is registered; `list_backends` → ≥1 healthy backend; `list_containers` answers |
 | 3 | CLI + ssh config | `containarium version --server <url>` reports a release; `containarium ssh-config sync` writes `~/.containarium/ssh_config` |
 | 4 | Sentinel ssh path | `~/.containarium/keys/` exists (0700); TCP 22 to the sentinel opens; every ssh the chain runs carries `-o IdentitiesOnly=yes` |
-| 5 | Build credential path | The **daemon that owns the box** holds `GH_TOKEN` for the tenant (`containarium secrets list <tenant> --server <daemon>` — names only; a hosted control plane does not hold tenant plaintext and answers 501 for secrets by design); a fresh box sees it as env; the build recipe reads it from env into a 0600 file it deletes after the build |
+| 5 | Build credential path | The **daemon that owns the box** holds `GH_TOKEN` for the tenant (`containarium secrets list <tenant> --server <daemon>` — names only; secrets are read from the daemon, not the control plane); a fresh box sees it as env; the build recipe reads it from env into a 0600 file it deletes after the build |
 | 6 | Committed dev config | The target repo carries a documented dev override (compose override / `.env.dev.example`) covering every dev-only flag its daemon needs; `git ls-files` finds it |
 | 7 | Permission rules | Claude Code settings allow the chain's commands (list below); a dry `gh issue comment --help` and an `ssh -G` with the keys dir run without a prompt |
 | 8 | Per-pass box defaults | On a fresh box: `loginctl show-user $USER -p Linger` → `yes`; `podman info` rootless with `docker.io` in unqualified search; `tmux -V` present |
@@ -106,9 +106,8 @@ readiness report is posted; defaults to the newest open sprint umbrella).
    ```
 
    For 2, use the MCP tools (`list_backends`, `list_containers`). For 5,
-   use the CLI against the daemon that owns the box — a hosted control
-   plane's `list_secrets` / `set_secret` return 501 (secrets live with the
-   daemon, never the control plane), which also makes capability 3 a
+   use the CLI against the daemon that owns the box. The MCP secret tools
+   do not cover tenant secrets, which also makes capability 3 a
    prerequisite of 5. For 7, read the settings files
    (`~/.claude/settings.json`, project `.claude/settings.json`) and match
    the rule list below. For 8, only when a box name was given.
@@ -161,7 +160,7 @@ readiness report is posted; defaults to the newest open sprint umbrella).
      Bash(ssh -i ~/.containarium/keys/*:*)
      Bash(scp -i ~/.containarium/keys/*:*)
      Bash(nc -z:*)
-     Bash(curl -s -m * https://*.containarium.dev/*)
+     Bash(curl -s -m * https://<control-plane-host>/*)
      Bash(containarium *)
      Bash(gh issue view:*)   Bash(gh issue comment:*)   Bash(gh issue edit:*)
      Bash(gh pr view:*)      Bash(gh api repos/*)        Bash(gh release view:*)
@@ -200,8 +199,7 @@ readiness report is posted; defaults to the newest open sprint umbrella).
      `<owner>/<private-module-repo>`, nothing else), put once in the secret
      store of the **daemon that owns the boxes** — `containarium
      secrets set <tenant> GH_TOKEN <value> --server <daemon>` from *their*
-     session (not the MCP's `set_secret`: a hosted control plane refuses
-     secrets with 501 by design) — so every box that tenant creates
+     session, not via the MCP tools — so every box that tenant creates
      inherits it as `environment.GH_TOKEN`. The box-side build then reads
      it from env:
 
@@ -246,21 +244,12 @@ readiness report is posted; defaults to the newest open sprint umbrella).
    things that are legitimately theirs — a prod confirmation and any
    human-in-the-loop verification step (a tester's own sign-in).
 
-**Platform quirks this skill works around (verify against your version;
-file or link, don't hide)**
+**Known platform gaps (verify against your version)**
 
-- `compose_enable` may be unavailable on a hosted control plane, so no
-  linger without sudo on the box
-- `podman-compose run` rejects `--no-build`; run migrations straight from
-  the built image on the compose network
-- `podman-compose` evaluates `${VAR:?}` guards for profiled-off services
-- `/v1/version` reports the last tag, not the build commit — take the pass
-  identity from the parity check, not the endpoint
-- There is no platform path for a build secret; the tenant store + env
-  read above is the workaround until there is one
-
-Each of these should be an issue on the platform repo, referenced from the
-readiness comment, so the workaround has an expiry.
+Where this skill works around a platform gap, the gap is tracked as an
+issue on the platform repo, and the readiness comment links it, so the
+workaround has an expiry. Take the pass identity from the parity check,
+not from a version endpoint.
 
 **Guardrails**
 

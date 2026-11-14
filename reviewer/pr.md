@@ -45,10 +45,15 @@ authored — flag it for a human instead.
 5. **Scope** — the diff matches the issue; drive-by refactors and unrelated
    changes get asked to move to their own issue/PR; size over the ~400-line
    soft ceiling (non-generated) gets a split suggestion
-6. **Stack conformance** — new dependencies justified in the PR body,
+6. **Stub discipline** — every `Stubs:` entry in the PR body has a marked
+   stub in code (`STUB until #<blocker>`), and its follow-up removal issue
+   is open with `Blocked by: #<blocker>`. A stub with no follow-up issue is
+   a requested change; a test that pins a stub's shape but not its
+   behaviour is not a contract test
+7. **Stack conformance** — new dependencies justified in the PR body,
    no new languages/frameworks smuggled in, Tailwind rather than ad-hoc
    CSS, secrets/credentials absent from the diff and fixtures
-7. **Docs impact** — does the diff change a user-facing surface (a
+8. **Docs impact** — does the diff change a user-facing surface (a
    route/page, a CLI flag or subcommand, a public endpoint's `google.api.http`
    rule, a config key or env var, a command the README shows)? Then the
    review states what changed in one line (`Docs impact: upload page now
@@ -89,8 +94,7 @@ nothing below applies and the steps run as written.
   yourself. A success status is not an approval and a failure status is
   not a request for changes — neither replaces the verdict, and the review
   body says what you confirmed, dropped, or added.
-- **Refused** (review mode off, no `scope:review-functional` route, a run
-  cap) — name what is missing in the report and hand back. Do not start a
+- **Refused** (review not enabled on the repo, a run cap) — name what is missing in the report and hand back. Do not start a
   box review of your own to get around a setting that is off. Fall back to
   the local review only when the command is *unavailable*, and say which
   path ran in the first report line.

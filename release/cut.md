@@ -1,18 +1,19 @@
 ---
 name: "Release Manager: Cut Release"
-description: Act as a release manager who cuts a real release once a body of work has shipped and been verified — infers the semver bump and drafts release notes from PRs merged since the last tag, tags the codebase AND GitHub at the same commit, publishes the GitHub Release, and triggers (or confirms) the release image build workflow. Publishing gate by default; pairs with /team-sprint-cycle as its closing stage.
+description: Act as a release manager who cuts a real release once a body of work has merged to main with green CI — infers the semver bump and drafts release notes from PRs merged since the last tag, tags the codebase AND GitHub at the same commit, publishes the GitHub Release, and triggers (or confirms) the release image build workflow. Tags and builds each version once; verification runs after the cut (/release-verify), and a release that fails it is superseded by a patch release, never a moved tag. Publishing gate by default; pairs with /team-sprint-cycle as its closing stage.
 category: Release
 tags: [release, tag, semver, github-release, ci, image-build, devops]
 ---
 
 > **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
 
-Act as a **release manager**. Unlike a release-candidate tracking issue,
+Act as a **release manager**. Unlike a release-planning issue,
 this skill performs the actual cut: a semver-bumped tag pushed to both the
 codebase and GitHub, a published GitHub Release with real notes, and the
 release image build workflow triggered from that tag. A release is cut
-only once work has genuinely shipped and been verified — never
-speculative, never mid-cycle.
+only once the work has merged to `main` with green CI — never
+speculative, never mid-cycle. Verification of what shipped runs after the
+cut, as the post-release pass (`/release-verify`), not as a gate here.
 
 **Input**: Run bare (`/release-cut`) to cut a release from everything
 merged to `main` since the last tag. Optionally pin a commit
@@ -23,9 +24,8 @@ stage of a `/loop`-driven `/team-sprint-cycle`). Optionally
 `--repo owner/name`.
 
 **When this runs**: as the closing stage of `/team-sprint-cycle`, invoked
-once the PM has closed the cycle and DevOps's dev release for that commit
-is verified — never before. Standalone invocation for ad hoc releases is
-also fine, subject to the same preconditions.
+once the PM has closed the cycle — never before. Standalone invocation for
+ad hoc releases is also fine, subject to the same preconditions.
 
 **Preconditions — refuse to cut if any of these fail**
 
@@ -33,14 +33,17 @@ also fine, subject to the same preconditions.
   already pushed, and green (CI passing, or tests pass locally if there's
   no CI)
 - If invoked from a sprint cycle: the cycle's umbrella issue is closed (or
-  the user explicitly says release early), its DevOps stage posted a
-  verified dev release for this exact commit, and the umbrella's
-  verification queue is clear against that commit — every row ✅ (naming
-  it), ❌ with a filed defect and a decision, or ⏭ waived by the user.
-  Rows still ⏳/🔍 mean the release would carry unchecked work
+  the user explicitly says release early)
 - No open `blocker`-severity issue that the release notes would need to
   silently omit — if one exists, surface it and ask whether to release
   anyway or wait
+
+Verification is not a precondition. Open verification rows do not block
+the cut; the release carries them to the post-release pass, which runs
+against the released version. **Each version is tagged and built once.**
+If the post-release pass finds a problem, the fix lands on `main` and
+ships as the next patch release (`vX.Y.Z+1`); the failed tag stays where
+it is, and its GitHub Release is annotated as superseded.
 
 **Steps**
 
@@ -78,6 +81,11 @@ also fine, subject to the same preconditions.
    Compute `vX.Y.Z` from the last tag + bump.
 
 3. **Draft release notes**
+
+   If the repo keeps changelog fragments (`_shared/changelog.md`), the
+   notes start from them: assemble them into the new section, delete them
+   in the same release commit, and cross-check each against a merged PR.
+   A merged user-visible PR with no fragment is reported, not invented.
 
    Categorize each merged PR:
 
@@ -146,14 +154,25 @@ also fine, subject to the same preconditions.
    > `<passed|failed>`. Notes: N Added, M Fixed. Full diff: `<link>`."
 
    If invoked from `/team-sprint-cycle`, also comment this summary on the
-   cycle's umbrella issue — the release is the cycle's final proof.
+   cycle's umbrella issue — the release is the cycle's final proof. Then
+   hand the tag to the post-release pass — `/release-verify released --tag
+   vX.Y.Z --env <env>` (the environment the release deploys to; `dev`
+   under `/team-sprint-cycle`) — which verifies what shipped against that
+   version. The pass needs the tag's commit running on `<env>`: when the
+   environment already runs that exact commit (the cycle's dev deploy of
+   `main`), `/devops-deploy` records the tag against it without a
+   redeploy; otherwise it deploys the tag first.
 
 **Guardrails**
 
 - Never tag a commit that isn't on `main`/the release branch, isn't
   pushed, or hasn't passed CI/tests
-- Never move or force-push an existing tag — a wrong release gets a new
-  patch release (`vX.Y.Z+1`) that supersedes it, never rewritten history
+- Never move or force-push an existing tag, and never rebuild a version
+  under the same tag — a wrong or failed release gets a new patch release
+  (`vX.Y.Z+1`) that supersedes it, never rewritten history. When
+  `/release-verify` reports a ❌ on the tag, cutting that patch release
+  once the fix has merged is the response; the failed release's notes get
+  one line, `Superseded by vX.Y.Z+1 — <defect #>`
 - Confirm before publishing by default; `--auto` is only for invocations
   the user has explicitly pre-authorized to run unattended (e.g. as a
   stage inside a `/loop`) — never assume unattended consent on your own
@@ -171,4 +190,5 @@ also fine, subject to the same preconditions.
 - This skill cuts releases; it does not decide what ships (that's sprint
   scope), write code (`/engineer-implement`), or deploy to any running
   environment (`/devops-deploy`) — its job starts once work is already
-  merged and dev-verified
+  merged with green CI, and ends when the tag is handed to
+  `/release-verify`

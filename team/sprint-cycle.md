@@ -5,7 +5,7 @@ category: Team
 tags: [team, sprint, pm, engineer, devops, qa, verification, release, umbrella-issue, model-routing, worktree, deploy, tag, loop]
 ---
 
-> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. Verification is a post-deploy follow-up, never a merge gate; every `needs-verification` item is recorded on the umbrella's queue or on one dedicated verification issue — see `_shared/verification.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. Verification is a post-deploy follow-up, never a merge gate; every `needs-verification` item is recorded as a row on the next release's verification ticket — see `_shared/verification.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
 
 Act as the **cycle orchestrator**: you do not own scope (the PM stage does)
 or code (the engineer stage does) — you own that the cycle *moves* and that
@@ -43,11 +43,14 @@ between each:
    on `main` and shipped as the next patch release; the tag never moves.
 
 The umbrella issue is the contract across all five stages: the PM writes
-scope and the verification queue onto it, engineers pull work off it and
-report PRs back, DevOps posts the dev deploy's commit + URL (which flips
-queue items to *ready to verify*), the release manager posts the cut tag +
-build result, and QA's post-release pass — tracked on the release issue —
-posts its results stamped with the tag commit as the cycle's final entry.
+scope onto it (and each verification item's row onto the release
+verification ticket the umbrella links — `_shared/verification.md`),
+engineers pull work off it and report PRs back, DevOps posts the dev
+deploy's commit + URL (which flips the ticket's rows in that commit to
+*ready to verify*), the release manager posts the cut tag + build result,
+and QA's post-release pass — run against, and recorded on, the release
+verification ticket — is summarized here, stamped with the tag commit, as
+the cycle's final entry.
 
 **One version on dev per cycle.** The dev environment is shared, so it
 carries the cycle's deployed commit and nothing else: no per-issue
@@ -160,9 +163,11 @@ underpowered.
    - Mark the scope's **verification items** as `/pm-sprint-delivery`
      specifies: any issue whose acceptance criteria CI can't prove gets
      the `needs-verification` label, **Verify on `<env>`** steps in its
-     body, and a row on the umbrella's verification queue (⏳ awaiting
-     deploy). This happens at scoping time, not when the issue merges —
-     step 9's post-release pass can only batch what was flagged. The flag
+     body, and a row on the repo's next release verification ticket
+     (**Sprint** naming this umbrella, ⏳ awaiting deploy), which the
+     umbrella links. This happens at scoping time, not when the issue
+     merges — step 9's post-release pass can only batch what was
+     flagged. The flag
      changes when the issue is *checked*, never when its PR merges
    - An issue is scope-eligible only when it is **ready**: not blocked
      (a `Blocked by` whose PR is merged or at least open counts as ready
@@ -326,7 +331,7 @@ underpowered.
      **Shipped, awaiting verification:** <none | #42 ⏳ (merged, next
        deploy), #44 🔍 on `<commit>` (post-release pass)>
      **Cut release:** <not yet | `vX.Y.Z` tagged, build `<passed|failed>`>
-     **Post-release verification:** <not yet | release #N: 3 ✅ on
+     **Post-release verification:** <not yet | release verification #N: 3 ✅ on
        `<tag-commit>`, 1 ❌ (defect #31 → vX.Y.Z+1)>
      **Waiting on a decision:** <none | #15 (2d, architect — default: fail
        loudly), #17 (1d, devops)>
@@ -342,8 +347,8 @@ underpowered.
 
    Closing on unverified code is paperwork, not delivery — before the
    cycle closes, ship what it built. "Merged" is the trigger: the deploy
-   never waits for queue rows to be checked, because it is what makes
-   them checkable.
+   never waits for verification rows to be checked, because it is what
+   makes them checkable.
 
    - Follow the `/devops-deploy` contract in full: **committed state
      only** (a dirty tree or an untested commit does not deploy), sync
@@ -358,12 +363,12 @@ underpowered.
      pass against the deployed dev URL is the deploy's proof, exactly as
      the `/devops-deploy` contract calls for
    - Record the deployed commit + dev URL as a comment on the umbrella,
-     and mark which verification-queue items that commit contains
-     (⏳ → 🔍) per the `/devops-deploy` contract — on the umbrella and
-     on the repo's open verification issue, if one exists, since the
-     environment carries both. This is the evidence step 7's closing
-     summary points to and step 9's pass runs against (the tag commit is
-     this commit when nothing merges in between)
+     and, per the `/devops-deploy` contract, post the deploy record on
+     every open release verification ticket with a row that commit
+     contains and flip those rows ⏳ → 🔍 — whichever sprint scoped
+     them, since the environment carries them all. This is the evidence
+     step 7's closing summary points to and step 9's pass runs against
+     (the tag commit is this commit when nothing merges in between)
    - **No deployable service** (library, CLI-only project): skip this
      step, say so explicitly in the umbrella comment and the closing
      summary, and move straight to close
@@ -380,23 +385,27 @@ underpowered.
 
    Close out as the PM. Closing says "the scope merged and runs on dev";
    it does not say "verified" — that is the post-release pass in step 9,
-   and `needs-verification` rows still ⏳/🔍 do **not** hold the close:
+   and verification rows still ⏳/🔍 do **not** hold the close:
 
    - Verify every Phase 1 issue is closed via a merged PR, or has an
      explicit carry-over note (what remains and why)
    - Verify the dev deploy of `main` from step 6 is green (health check on
      the real route, commit + URL recorded on the umbrella), or the
      no-deployable-service note is there
-   - List the verification queue as it stands — rows ⏳/🔍 with the commit
-     each needs, rows already ✅/❌ — under **Carried to release
-     verification**. The cut carries them; `/release-verify` collects
-     every row whose merge is in the release window, whether its umbrella
-     is open or closed. A row ⏳ whose merge commit is not in the deployed
-     commit joins the next release instead; say which
+   - Check every scope issue flagged `needs-verification` or
+     `awaiting-verification` has a row on a release verification ticket
+     with **Sprint** naming this umbrella, and list those rows as they
+     stand — ticket, status, the commit each needs — under **Release
+     verification**. Nothing is carried or copied at close: the rows
+     live on the ticket, not the umbrella, so closing loses none, and
+     `/release-verify` settles at `released` which of them are in the
+     tag (the rest roll forward to the next ticket). A flagged issue
+     with no row is named there as unrecorded, owner `/release-verify`;
+     it does not hold the close, and step 9 gets it a row before the pass
    - Post a closing summary: shipped vs. scoped, escalations that
      happened (and what that says about the routing rubric), carry-overs,
      the dev deploy evidence from step 6 (commit + URL, or the
-     no-deployable-service note), and the carried verification rows
+     no-deployable-service note), and the release verification list
    - Close the umbrella if this skill created it; if it belongs to a
      standalone `/pm-sprint-delivery` run, post the summary as a comment
      and leave closing to that flow
@@ -433,8 +442,12 @@ underpowered.
      trigger already started it), watch it to completion, and report
      pass/fail — a red build makes this a **failed** release, not a
      tagged one
-   - Comment the cut (version, tag URL, release URL, build run result)
-     on the umbrella issue, then hand the tag to step 9
+   - In the same step that tags, `/release-cut` records the tag on this
+     release's verification ticket and opens the next one — a merge that
+     lands after the tag still has a home
+   - Comment the cut (version, tag URL, release URL, build run result,
+     and both tickets — this release's and the next) on the umbrella
+     issue, then hand the tag to step 9
 
    In `release` mode, this is the only stage that runs; it still enforces
    the precondition above.
@@ -442,36 +455,42 @@ underpowered.
 9. **Post-release verification — one batched pass on the released
    version (mode: verify, or automatically once the tag exists)**
 
-   The cycle's `needs-verification` issues have been waiting on exactly
-   this: a known, released version on a shared environment. Verify them
-   together, never as they merge, and only after the cut:
+   The cycle's verification items (`awaiting-verification` since their
+   merge) have been waiting on exactly this: a known, released version
+   on a shared environment. Verify them together, never as they merge,
+   and only after the cut:
 
-   - Run `/release-verify released --tag vX.Y.Z --env dev`. It reads
+   - Run `/release-verify released --tag vX.Y.Z --env dev`. It settles
+     which rows are in the tag by merge-commit ancestry (the rest roll
+     forward to the next ticket), gets every unrecorded
+     `awaiting-verification` item in the tag its row, reads
      `/devops-deploy`'s record for the tag's commit on dev — step 6's
      deploy *is* that record when nothing merged between it and the cut;
      otherwise it asks DevOps to deploy the tag first — and triggers the
      one `/qa-sprint-verify --env dev --commit <tag-commit>` pass. One
-     pass, one commit, every 🔍 item in it, read from the umbrella's queue
-     *and* from the repo's open verification issue
-     (`_shared/verification.md`): rows that merged outside this sprint
-     ride the same release and are checked in the same pass
-   - Results land on the queue homes and on each child issue, stamped
-     with the tag commit; `/release-verify` mirrors them on the release
-     issue; ❌ items become defects via `/qa-issue-report`, cross-linked to
+     pass, one commit, the rows of the tag's release verification ticket
+     (`_shared/verification.md`): rows from another sprint or from none
+     (**Sprint** `—`) ride the same release and are checked in the same
+     pass
+   - Results land on the ticket's rows, stamped with the tag commit, and
+     `awaiting-verification` comes off each issue whose row is ✅ or ❌;
+     ❌ items become defects via `/qa-issue-report`, cross-linked to
      the issue they came from and marked `Found after release`
    - **A ❌ never moves the tag.** The defect is **next cycle's scope**
      (route it a `model:*` tier per step 2, work it through step 3), and
      the fix ships as the next patch release `vX.Y.Z+1` — the next
      invocation's PM stage opens that cycle with the defect first. A
-     blocker-severity ❌ is reported as such on the release issue; whether
-     to roll prod back to the previous tag is the human's call, outside
-     this skill
-   - Items merged after the tag commit are not verifiable here; they are
-     in the next release's window. Never verify them against a version
-     that doesn't contain them, and never leave them with no queue home
-   - **Empty ledger** (nothing in the release needed a deployed
-     environment): `/release-verify` says so and closes the release issue
-     — an empty ledger is a legitimate result, an unchecked one is not
+     blocker-severity ❌ is reported as such on the release verification
+     ticket; whether to roll prod back to the previous tag is the
+     human's call, outside this skill
+   - Items merged after the tag commit are not verifiable here; their
+     rows are on the next ticket and are checked on the release that
+     carries them. Never verify them against a version that doesn't
+     contain them
+   - **No rows** (nothing in the release needed a deployed
+     environment): there is nothing for the pass to check;
+     `/release-verify` says so and closes the tag's ticket — an empty
+     ticket is a legitimate result, an unchecked one is not
    - **Docs on the same commit.** While the environment is up on the
      released version, run `/writer-docs audit --env dev`: it diffs every
      manual page's sources since the commit it was last verified on,
@@ -489,7 +508,8 @@ underpowered.
      defect still needs a repro screenshot, or an item being re-checked,
      keeps the environment up. A persistent shared dev rung is left
      running, as it always was
-   - The cycle's last umbrella comment is the release issue's summary:
+   - The cycle's last umbrella comment is the release verification
+     ticket's summary:
      tag, env, ✅/❌ counts on the tag commit, defects filed, and whether
      a patch release is now owed
 
@@ -539,17 +559,19 @@ answers.
 - **Verification is batched, one deployed version at a time.** Never
   deploy a single issue to dev so it can be verified alone, never split a
   pass across two commits, and never redeploy while a pass is running. An
-  urgent verification is answered with the next deploy of the whole
-  batch — the shared environment's known version is the asset here
-- A merged PR is not a verified issue: `needs-verification` items stay on
-  the umbrella's queue until a pass stamps them with the commit they were
+  urgent verification is answered by the next release and its pass over
+  the whole batch — the shared environment's known version is the asset
+  here
+- A merged PR is not a verified issue: the merge advances the label to
+  `awaiting-verification`, and the item's row stays open on the release
+  verification ticket until a pass stamps it with the commit it was
   verified on
 - **Verification never gates a merge or the dev deploy.** No stage waits
-  for a queue row to be checked before landing or shipping the PR behind
-  it; a `needs-verification` PR that is approved and green is merged and
-  deployed like any other, and reported as *shipped, awaiting
-  verification* until the pass. The one hold is an item recorded on
-  neither the umbrella's queue nor the verification issue
+  for a verification row to be checked before landing or shipping the PR
+  behind it; a `needs-verification` PR that is approved and green is
+  merged and deployed like any other, and reported as *shipped, awaiting
+  verification* until the pass. The one hold is `/reviewer-pr`'s, on an
+  item with no row on the release verification ticket
   (`_shared/verification.md`)
 - **No unattended cycle over open questions.** Continuous mode does not
   scope, route, or implement while the umbrella has a ❓ row or the
@@ -582,8 +604,9 @@ answers.
   deploy (or an explicit no-deployable-service note) is required before
   close, same as a green test suite is required before a PR ships. It
   does close on deployed-but-unverified work: verification is the
-  post-release pass, and its rows are carried, listed, never silently
-  dropped
+  post-release pass, and its rows stay on the release verification
+  ticket — listed at close, never copied onto the umbrella, never
+  silently dropped
 - The release stage never runs ahead of a closed cycle with a green dev
   deploy — cutting a tag against an open umbrella or a red dev deploy is
   refused, not worked around. It never waits on verification rows

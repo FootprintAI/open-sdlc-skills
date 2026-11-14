@@ -1,11 +1,11 @@
 ---
 name: "Release Manager: Cut Release"
-description: Act as a release manager who cuts a real release once a body of work has merged to main with green CI — infers the semver bump and drafts release notes from PRs merged since the last tag, tags the codebase AND GitHub at the same commit, publishes the GitHub Release, and triggers (or confirms) the release image build workflow. Tags and builds each version once; verification runs after the cut (/release-verify), and a release that fails it is superseded by a patch release, never a moved tag. Publishing gate by default; pairs with /team-sprint-cycle as its closing stage.
+description: Act as a release manager who cuts a real release once a body of work has merged to main with green CI — infers the semver bump and drafts release notes from PRs merged since the last tag, tags the codebase AND GitHub at the same commit, publishes the GitHub Release, and triggers (or confirms) the release image build workflow. In the same step that tags, records the tag on that release's verification ticket and opens the next one, so a merge always has a home. Tags and builds each version once; verification runs after the cut (/release-verify), and a release that fails it is superseded by a patch release, never a moved tag. Publishing gate by default; pairs with /team-sprint-cycle as its closing stage.
 category: Release
 tags: [release, tag, semver, github-release, ci, image-build, devops]
 ---
 
-> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. Verification is a post-deploy follow-up, never a merge gate; every `needs-verification` item is recorded as a row on the next release's verification ticket — see `_shared/verification.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
 
 Act as a **release manager**. Unlike a release-planning issue,
 this skill performs the actual cut: a semver-bumped tag pushed to both the
@@ -40,7 +40,10 @@ ad hoc releases is also fine, subject to the same preconditions.
 
 Verification is not a precondition. Open verification rows do not block
 the cut; the release carries them to the post-release pass, which runs
-against the released version. **Each version is tagged and built once.**
+against the released version. The rows live on the **release verification
+ticket** (`_shared/verification.md`): one per pending tag, and this skill
+opens the next one in the same step that tags (step 5). **Each version is
+tagged and built once.**
 If the post-release pass finds a problem, the fix lands on `main` and
 ships as the next patch release (`vX.Y.Z+1`); the failed tag stays where
 it is, and its GitHub Release is annotated as superseded.
@@ -131,6 +134,37 @@ it is, and its GitHub Release is annotated as superseded.
    commit (`git rev-list -n1 vX.Y.Z` matches the release's target commit)
    before moving on — a mismatch here is a broken release, not a detail.
 
+   **In the same step, hand the verification rows a home**
+   (`_shared/verification.md`) — a merge that lands a minute after the
+   tag must not find the queue closed:
+
+   ```bash
+   gh issue list --label release --state open --json number,title,body
+   ```
+
+   - **This release's ticket.** The open ticket with no tag (the *next
+     ticket*) becomes this release's: record **Tag**, **Tag commit** and
+     the release URL in its header and retitle it
+     `Release verification: vX.Y.Z`. Leave its rows alone
+   - **The new next ticket.** Open one from the template in
+     `_shared/verification.md` — title
+     `Release verification: next release (opened <YYYY-MM-DD>)`, labels
+     `epic` + `release`, **Since:** `vX.Y.Z`, an empty row table — and
+     link the two tickets to each other in one comment each
+   - **A patch release while the next ticket is named for a later
+     version** (cutting `v1.3.1` while `Release verification: v1.4.0` is
+     open): leave that ticket as the next ticket and open
+     `Release verification: v1.3.1` with the tag recorded on it
+   - **No next ticket existed** (first release with this contract): open
+     both — this release's, with the tag recorded, and the next
+
+   Do not sort rows between the two tickets here. Which rows shipped in
+   the tag is decided by whether their merge commit is an ancestor of it,
+   and `/release-verify released` does that; until it runs, new rows go
+   on the new next ticket and nothing is lost. More than one untagged
+   ticket, or one already recording this tag → stop and report rather
+   than open a third.
+
 6. **Trigger the release image build workflow**
 
    - If the repo's build workflow already fires on tag push (look for
@@ -154,10 +188,12 @@ it is, and its GitHub Release is annotated as superseded.
    > `<passed|failed>`. Notes: N Added, M Fixed. Full diff: `<link>`."
 
    If invoked from `/team-sprint-cycle`, also comment this summary on the
-   cycle's umbrella issue — the release is the cycle's final proof. Then
+   cycle's umbrella issue — the release is the cycle's final proof — and
+   name both tickets in it (this release's and the next). Then
    hand the tag to the post-release pass — `/release-verify released --tag
    vX.Y.Z --env <env>` (the environment the release deploys to; `dev`
-   under `/team-sprint-cycle`) — which verifies what shipped against that
+   under `/team-sprint-cycle`) — which rolls the rows that are not in the
+   tag forward to the next ticket and verifies what shipped against that
    version. The pass needs the tag's commit running on `<env>`: when the
    environment already runs that exact commit (the cycle's dev deploy of
    `main`), `/devops-deploy` records the tag against it without a
@@ -173,6 +209,13 @@ it is, and its GitHub Release is annotated as superseded.
   `/release-verify` reports a ❌ on the tag, cutting that patch release
   once the fix has merged is the response; the failed release's notes get
   one line, `Superseded by vX.Y.Z+1 — <defect #>`
+- Never tag without opening the next release verification ticket in the
+  same step, and never open a second one while an untagged ticket is
+  already open. This skill writes ticket headers and opens tickets; it
+  never writes, moves or re-statuses a row
+- One release line per repo: tags are cut from one branch, and a patch
+  release is the next tag on it. Cutting from a second maintained release
+  branch is outside the verification contract — say so before tagging
 - Confirm before publishing by default; `--auto` is only for invocations
   the user has explicitly pre-authorized to run unattended (e.g. as a
   stage inside a `/loop`) — never assume unattended consent on your own

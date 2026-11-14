@@ -1,7 +1,8 @@
 # Notice: every issue carries one type label
 
 **Applies to every skill that opens an issue** (GitHub or GitLab) — product
-stories, sprint umbrellas and child issues, QA defects, release issues,
+stories, sprint umbrellas and child issues, QA defects, release
+verification tickets,
 docs and CI work. The label says at a glance what an issue *is*.
 
 ## Type labels (exactly one per issue)
@@ -10,23 +11,32 @@ docs and CI work. The label says at a glance what an issue *is*.
 |---|---|---|
 | `bug` | a defect — behavior differs from what was specified | `/qa-issue-report` |
 | `feature-request` | new or changed user-visible capability | `/product-define`, `/pm-sprint-delivery` |
-| `epic` | an umbrella that groups child issues (sprint umbrella, release issue) | `/pm-sprint-delivery`, `/release-verify` |
+| `epic` | an umbrella that groups child issues (sprint umbrella, release verification ticket) | `/pm-sprint-delivery`, `/release-verify`, `/release-cut` |
 | `ci` | pipeline, build, test-infra, release-workflow work | any |
 | `docs` | documentation only | any |
 | `security` | vulnerability, hardening, compliance gap | any |
 | `chore` | maintenance that fits none of the above (deps, refactor, cleanup) | any |
 
-Existing workflow labels (`sprint`, `release`, `product`, `verification`,
-`needs-verification`, `merge-hold`, `model:*`, `runtime:*`, `size:*`) are
-**additional**, not replacements — an umbrella is `epic` + `sprint`; a
-release issue (`/release-verify`) is `epic` + `release`; a dedicated verification issue is
-`epic` + `verification`.
+Existing workflow labels (`sprint`, `release`, `product`,
+`needs-verification`, `awaiting-verification`, `merge-hold`, `model:*`,
+`runtime:*`, `size:*`) are **additional**, not replacements — an umbrella
+is `epic` + `sprint`; a release verification ticket (`/release-verify`,
+opened by `/release-cut`) is `epic` + `release`.
 
 `needs-verification` goes on an **issue** whose acceptance criteria CI
-cannot prove. It never holds the PR: the item is recorded on the sprint
-umbrella's verification queue or on a verification issue and checked after
-the deploy — see `_shared/verification.md`. Suggested colors
-`needs-verification` `fbca04`, `verification` `3e4b9e`.
+cannot prove. It never holds the PR: the item is recorded as a row on the
+next release's verification ticket and checked after the release — see
+`_shared/verification.md`. The label advances with the work:
+`needs-verification` while the PR is unmerged → `awaiting-verification`
+from the merge until the item is verified (`/merge-steward` swaps it) →
+removed when its row is ✅, ❌ or ⏭. Never both at once. Any issue labelled
+`awaiting-verification` with no row on a release verification ticket is an
+unrecorded item. Suggested colors `needs-verification` `fbca04`,
+`awaiting-verification` `c5def5`, `release` `3e4b9e`.
+
+The `verification` label is retired: it marked the dedicated verification
+issue, which the release verification ticket replaces, and `release`
+already finds that ticket. Delete it once no open issue carries it.
 
 `merge-hold` goes on a **PR**, not an issue: it tells `/merge-steward` to
 leave an approved PR unmerged (waiting on a release window, a paired

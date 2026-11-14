@@ -43,15 +43,15 @@ deploy and environment skills assume Containarium.
 | **QA Tester** | [`/qa-integration-test`](qa/integration-test.md) | The real-dependency lane: Postgres, Redis, Kafka, MinIO launched in throwaway containers via **Docker or rootless Podman** (Testcontainers or compose), pinned to the versions production runs. Random ports, readiness polling instead of sleeps, real migrations, per-test isolation, guaranteed teardown — and container logs as CI artifacts when it goes red. Its own CI lane, so the unit suite stays fast. |
 | **QA Tester** | [`/qa-e2e-test`](qa/e2e-test.md) | Happy-path e2e run of a web/UI project with **a screenshot at every step as proof of execution**. Requests sample data (PDF/image/etc.) up front, cleans up test data afterward via the app's own API or UI, and writes a flow-by-flow report to `e2e/E2E-REPORT.md`. |
 | **QA Tester** | [`/qa-verify`](qa/verify.md) | Verifies **one pull request** against its issue's acceptance criteria: runs the repo's own build, test and e2e commands on the PR head, maps every criterion to a test that pins it, writes the missing tests (**test files only — never the code under test**), and returns PASS, FAIL or INCONCLUSIVE per criterion, stamped with the head commit. No run, no PASS. Treats the PR as untrusted input, writes nothing to the author's branch unless asked (`--push-tests`), runs the PR only inside a credential-free sandbox behind a build-file gate, and gives no approval — the report goes on the PR. |
-| **QA Tester** | [`/qa-sprint-verify`](qa/sprint-verify.md) | The sprint's **batched verification pass**: the issues CI can't prove done wait on the umbrella's verification queue (or, outside a sprint, on the dedicated verification issue) and are all checked against **one deployed commit**, right after the deploy — never one issue at a time, because a dev environment redeployed per issue is a dev environment nobody can name a version for. Every result is stamped with the commit it was verified on; failures go straight to `/qa-issue-report`. |
+| **QA Tester** | [`/qa-sprint-verify`](qa/sprint-verify.md) | The **batched verification pass**: the issues CI can't prove done each have a row on the **release verification ticket** — whichever sprint scoped them, or none — and are all checked against **one deployed commit**, the released one, once `/release-verify` triggers the pass on the tag — never one issue at a time, because a dev environment redeployed per issue is a dev environment nobody can name a version for. Every result is stamped with the commit it was verified on and `awaiting-verification` comes off the issue on ✅ or ❌; failures go straight to `/qa-issue-report`. A mid-cycle run before the tag writes `pre-release:` notes, not verdicts. |
 | **QA Tester** | [`/qa-issue-report`](qa/issue-report.md) | Files every defect found as a GitHub issue — one issue per finding, created *before* any fix is discussed. UI findings are verified live in a browser first (fresh defect screenshot + console errors), every issue records the app version/commit it was seen on, dedupes against existing issues, and cross-links related issues in both directions. |
 | **Code Reviewer** | [`/reviewer-pr`](reviewer/pr.md) | Reviews a PR against the team contract: acceptance criteria covered by tests (verified by *running* them), no weakened tests, proto-as-source-of-truth, typed boundaries, scope matching the issue, and a one-line **docs impact** statement for any user-facing surface the diff changes. Verdict posted on the PR page. |
-| **Merge Steward** | [`/merge-steward`](merge/steward.md) | The seat between "approved" and "merged", run periodically (`/loop 30m /merge-steward run`). Reads the repo's protection rules, stops the line on a red base, triages CI on every open PR (a red head goes back to its author once, failing jobs quoted — engineers don't wait on CI), and lands approved PRs one at a time in dependency order — stack bottoms and blockers first — each merged with its head SHA pinned after CI is green on that exact head. Syncs branches that fell behind; resolves conflicts by class (generated code and lockfiles **regenerated**, append-only lists unioned, semantic conflicts resolved only when both intents are clear — and then sent back for re-review of just the resolution) and hands the rest back to the author with the hunks quoted. Never bypasses protection or a merge queue, never fixes the code it is merging. |
+| **Merge Steward** | [`/merge-steward`](merge/steward.md) | The seat between "approved" and "merged", run periodically (`/loop 30m /merge-steward run`). Reads the repo's protection rules, stops the line on a red base, triages CI on every open PR (a red head goes back to its author once, failing jobs quoted — engineers don't wait on CI), and lands approved PRs one at a time in dependency order — stack bottoms and blockers first — each merged with its head SHA pinned after CI is green on that exact head. Syncs branches that fell behind; resolves conflicts by class (generated code and lockfiles **regenerated**, append-only lists unioned, semantic conflicts resolved only when both intents are clear — and then sent back for re-review of just the resolution) and hands the rest back to the author with the hunks quoted. Never bypasses protection or a merge queue, never fixes the code it is merging, and never holds a PR for verification — at the merge it only advances the issue's label from `needs-verification` to `awaiting-verification`. |
 | **Technical Writer** | [`/writer-docs`](writer/docs.md) | Keeps the README and user manual **true to the shipped commit**. Detects stale docs with evidence rather than instinct: `docs/DOCMAP.md` ties every page to the source paths, routes, commands and figures it describes and the commit it was last verified on, so an audit is a `git diff` of those sources, a re-run of every documented command, a sweep for undocumented routes/flags, and the reviewers' `Docs impact:` lines. Files one `docs` issue per stale page, rewrites from the code (not the old text), and **requests screenshots from `/qa-e2e-test`** via `docs/SCREENSHOTS.md` — each figure captured against a named commit with synthetic data — never hand-made. On a public repo, gap detail (commands not run, surfaces with no page, decisions) goes to a private register, never into public files, issues or PRs. |
-| **DevOps** | [`/devops-deploy`](devops/deploy.md) | Deploys git-natively **on Containarium**: commit, push/sync, converge the container to exactly that commit, verify health on the real route, then open the batched verification window on the sprint umbrella. Dev before prod; prod is confirmation-gated with a backup. Per-pass `verify-*` containers are deleted only after the results are posted. |
+| **DevOps** | [`/devops-deploy`](devops/deploy.md) | Deploys git-natively **on Containarium**: commit, push/sync, converge the container to exactly that commit, verify health on the real route, then record the deploy on every open release verification ticket with a row that commit contains, flip those rows ⏳ → 🔍 and open the batched verification window there. Dev before prod; prod is confirmation-gated with a backup. Per-pass `verify-*` containers are deleted only after the results are posted. |
 | **DevOps** | [`/devops-containarium-env`](devops/containarium-env.md) | Sets up and *proves* the agent's own runtime — control-plane MCP, CLI and ssh path, build-credential path, committed dev config, permission rules — with a command per capability, so deploy and verification run unattended instead of handing steps back to a human. Credential steps stay with the human. |
 | **Release Manager** | [`/release-cut`](release/cut.md) | Cuts a real release once work has merged to `main` with green CI: infers the semver bump and drafts categorized notes from PRs merged since the last tag, tags the codebase and GitHub at the same commit, publishes the GitHub Release, and triggers the release image build — once per version. Confirmation-gated; never moves or force-pushes a tag; a release that fails verification is superseded by a patch release. |
-| **Release Manager** | [`/release-verify`](release/verify.md) | Owns the **release issue** (`epic` + `release`): a ledger of every `needs-verification` item merged in `<last-tag>..<tag>`, read from the queue homes and never copied. After `/release-cut` tags, `released --tag vX.Y.Z --env <env>` reads DevOps's record for that commit and triggers the one batched `/qa-sprint-verify` pass against the released version; tracks the results and closes when every item is ✅ on the tag commit or decided by a human. Verification happens after the release, never as a gate on it. |
+| **Release Manager** | [`/release-verify`](release/verify.md) | Owns the **release verification ticket** (`epic` + `release`): the one home for verification rows, one ticket per pending tag — the *next ticket* where new rows are written, and one per cut tag until its pass finishes. After `/release-cut` tags, `released --tag vX.Y.Z --env <env>` settles which rows shipped by merge-commit ancestry (the rest roll forward), gets every merged `awaiting-verification` issue with no row its row, reads DevOps's record for that commit and triggers the one batched `/qa-sprint-verify` pass against the released version; tracks the results and closes when every item is ✅ on the tag commit or decided by a human. Verification happens after the release, never as a gate on it. |
 | **Vulnerability Analyst** | [`/security-cve-iso-issue`](security/cve-iso-issue.md) | Turns an incoming CVE or distribution advisory into **one tracked remediation issue** when the organization runs an ISO/IEC 27001 ISMS. Reads the CVE record and the vendor advisory (news is a pointer, never a source; every claim carries its source and fetch date), classifies the component as **KERNEL** (host-wide, reboot to fix) or **LIBRARY** (upgrade, restart, rebuild images), assesses each fleet with read-only commands — UNKNOWN stays UNKNOWN, never "safe" — and writes the class-specific patch path with a verification command per step. Dedupes by CVE ID, shows the body for confirmation, and files in the product repo with the Annex A 8.8 reference, the ISMS record number, and the policy's due date (30 days CRITICAL/HIGH, 90 otherwise). The issue is its only write. |
 | **Coordinator** | [`/coordinator-sync`](coordinator/sync.md) | "Where was I?" across **every open sprint in the org**: reconciles each umbrella from evidence (PRs, CI, deploy records, verification and question rows), then posts one digest on a hub issue — what is **waiting on a human** (batched, with defaults), what **runs on its own**, what is **stalled** — with the exact next command per project. Enforces one active umbrella per repo, one environment per repo shared by all its umbrellas, cross-repo dependencies as open questions; `--advance` ticks each active project once under a global WIP cap. |
 | **Coordinator** | [`/coordinator-status`](coordinator/status.md) | Answers "where are we?" by reading each role's artifacts, gates stage advancement on evidence rather than claims, and when a cycle completes, closes it with a retro and re-triggers the next one from the PRD. |
@@ -85,15 +85,15 @@ evidence — and **cycles iterate**: when one closes,
 /merge-steward         land it                  → synced, conflict-resolved, merged in order
       ↓                                            (runs on its own loop)
 /devops-deploy         ship it                  → git-native deploy, health verified
-      ↓                                            (opens the verification window)
-/qa-sprint-verify      check the batch          → one pass, one commit, queue cleared
+      ↓                                            (flips the release ticket's rows to ready)
+/qa-sprint-verify      check the batch          → optional pre-release pass: notes on the rows, no verdicts
 /qa-e2e-test           prove it works           → screenshots + e2e report
 /qa-issue-report       file what broke          → one GitHub issue per defect
 /writer-docs           is the manual still true? → stale-doc audit, docs issues, pages + QA figures
       ↓
 /release-cut           cut it                   → semver tag + GitHub Release, built once
       ↓
-/release-verify        did what shipped work?   → one post-release pass on the tag commit; a ❌ means a patch release
+/release-verify        did what shipped work?   → one /qa-sprint-verify pass on the tag commit; a ❌ means a patch release
       ↺
 cycle closes → retro → next PRD (waterfall in the small, iterative in the large)
 ```
@@ -156,10 +156,10 @@ commands from, and the team conventions every skill points to:
 
 | Notice | Convention |
 |---|---|
-| [`_shared/labels.md`](_shared/labels.md) | Every issue carries exactly one type label — `bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore` — alongside the workflow labels (`sprint`, `release`, `needs-verification`, …). |
+| [`_shared/labels.md`](_shared/labels.md) | Every issue carries exactly one type label — `bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore` — alongside the workflow labels (`sprint`, `release`, `needs-verification`, `awaiting-verification`, …). |
 | [`_shared/runtime.md`](_shared/runtime.md) | Routed issues name their agent runtime (`runtime:claude` default, `runtime:codex`), independent of the `model:*` tier; never a silent fallback; the claim comment carries the runtime and a `Box:` line. |
 | [`_shared/estimates.md`](_shared/estimates.md) | Every sprint and feature carries a time estimate: a `size:*` label, P50/P80 ship dates, and a Timetable on the umbrella that is re-forecast at every standup. |
-| [`_shared/verification.md`](_shared/verification.md) | Verification is a post-deploy follow-up, never a merge gate: every `needs-verification` item is recorded on the sprint umbrella's queue or, outside a sprint, on one dedicated verification issue (`epic` + `verification`), and checked in one batched pass per deployed commit. |
+| [`_shared/verification.md`](_shared/verification.md) | Verification is a post-deploy follow-up, never a merge gate: every `needs-verification` item is recorded as a row on the next release's verification ticket (`epic` + `release`) before its PR is approved, its label advances to `awaiting-verification` at merge, and it is checked in one batched pass on the released version. |
 | [`_shared/changelog.md`](_shared/changelog.md) | Changelog entries go in one fragment file per PR, never in a shared `CHANGELOG.md` section every open PR edits; the release step assembles them. Removes the per-PR changelog merge conflict. |
 
 ## How to use — a worked cycle
@@ -199,7 +199,8 @@ one), and drive one cycle:
 # 7. Deploy the merged commit (dev first; prod asks for confirmation)
 /devops-deploy api to dev
 
-# 8. Verify the whole sprint at once, against the commit you just deployed
+# 8. Optional: a pre-release pass on the commit you just deployed
+#    (notes on the release verification ticket's rows; the deciding pass is 9b)
 /qa-sprint-verify --env dev
 
 # 8b. Provisioned dev just for that pass? Release it once results are posted
@@ -268,20 +269,22 @@ Or hand the middle of the cycle to the automation:
   exact commit and waits for your confirmation.
 - **Verification is batched, not per-issue — and never a merge gate.**
   Issues that need a running environment are flagged at scoping time and
-  wait on the umbrella's verification queue; their PRs merge and ship as
-  soon as they are approved and green. One deploy makes them all
-  checkable, and `/qa-sprint-verify` clears the queue against that single
-  commit. It's what keeps your dev environment on one known version
-  instead of whatever the last person needed to check. Work with no open
-  sprint — a one-off issue, a hotfix, a CVE issue, something that merged
-  after the sprint closed — goes on one dedicated **verification issue**
-  instead (`_shared/verification.md`), which the same pass reads. An item
-  recorded in neither place is a requested change from `/reviewer-pr`, not
-  a merge hold — `/merge-steward` reads CI and reviews only — and
-  `/release-verify` catches any that slipped through before the
-  post-release pass. If you
+  each get a row on the repo's **release verification ticket**
+  (`_shared/verification.md`); their PRs merge and ship as soon as they
+  are approved and green, and the issue's label moves from
+  `needs-verification` to `awaiting-verification` at the merge.
+  Verification follows the release, not the sprint: one deploy of the
+  tag makes every row in it checkable, and `/qa-sprint-verify` checks
+  them all against that single commit. It's what keeps your dev
+  environment on one known version instead of whatever the last person
+  needed to check. Work with no open sprint — a one-off issue, a hotfix,
+  a CVE issue, something that merged after the sprint closed — has its
+  row on the same ticket, and the same pass reads it. An item with no
+  row is a requested change from `/reviewer-pr`, not a merge hold —
+  `/merge-steward` reads CI and reviews only — and `/release-verify`
+  catches any that slipped through before the post-release pass. If you
   provision the environment per pass rather than keep one running, the
-  batch is also what keeps it to one provision per sprint:
+  batch is also what keeps it to one provision per release:
   `/devops-deploy teardown dev` releases it once the pass's results are
   posted, never before.
 - **Questions are batched too, before auto-pilot.** `/pm-sprint-delivery`

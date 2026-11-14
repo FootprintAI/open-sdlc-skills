@@ -41,7 +41,11 @@ Don't invent a tool.
 
 The connection rejects labels outside its allow-list *before* the tracker is
 touched. The list is set per connection. The team's type labels, `runtime:*`,
-`sprint`, `verification` and `needs-verification` may not be on it.
+`sprint`, `release`, `needs-verification` and `awaiting-verification` may not
+be on it. `awaiting-verification` must join the list alongside
+`needs-verification`: the label advances from one to the other at merge
+(`_shared/verification.md`), and a connection that allows only the first
+loses the item at that point.
 
 - Filing with a rejected label fails the whole create. So: create the issue
   with allowed labels only, then `issue.label` the rest, and **report each

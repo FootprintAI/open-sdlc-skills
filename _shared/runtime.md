@@ -84,8 +84,13 @@ Instead of a local worktree, run the issue in its own box. The agent keeps
 running if the session drops, the box is disposable, and no credential has
 to be placed in it.
 
-> **Scope: this launcher implements an issue. It is not the path for
-> work on an open PR.** On a connection-bound run, reviewing a PR and
+> **Scope: this launcher is the fallback for implementing an issue, and
+> not a path for work on an open PR.** On a connection-bound run an issue
+> is started with `@containarium start` (see "Starting an issue" in
+> `_shared/tracker-containarium.md`); use the steps below only when that
+> command is *unavailable*, never when it was *refused*.
+>
+> **For an open PR:** On a connection-bound run, reviewing a PR and
 > updating one (a revision after review, a fix for red CI, a branch sync)
 > are asked of the platform with `@containarium review` and
 > `@containarium changes <text>` — see "PR commands" in

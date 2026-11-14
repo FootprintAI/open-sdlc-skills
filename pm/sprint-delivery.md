@@ -1,11 +1,11 @@
 ---
 name: "PM: Sprint Delivery"
-description: Plan and coordinate a weekly sprint as a project manager. Prioritizes tasks by "make the flow work first, optimize next phase", opens a GitHub umbrella issue as the single coordination point, and tracks each task as a linked child issue with weekly progress updates. Flags the issues CI can't prove done and tracks them in a verification queue on the umbrella, verified in one batch against one deployed version rather than issue by issue. Finds every point an implementer would have to guess at scoping time and batches them as open questions on the umbrella, each with its default, so a human answers them once before the cycle runs unattended.
+description: Plan and coordinate a weekly sprint as a project manager. Prioritizes tasks by "make the flow work first, optimize next phase", opens a GitHub umbrella issue as the single coordination point, and tracks each task as a linked child issue with weekly progress updates. Flags the issues CI can't prove done and records each as a row on the next release's verification ticket, verified in one batch against the released version rather than issue by issue. Finds every point an implementer would have to guess at scoping time and batches them as open questions on the umbrella, each with its default, so a human answers them once before the cycle runs unattended.
 category: Project Management
 tags: [pm, sprint, weekly, github-issues, prioritization, delivery, verification]
 ---
 
-> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. Verification is a post-deploy follow-up, never a merge gate; every `needs-verification` item is recorded on the umbrella's queue or on one dedicated verification issue — see `_shared/verification.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. Verification is a post-deploy follow-up, never a merge gate; every `needs-verification` item is recorded as a row on the next release's verification ticket — see `_shared/verification.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
 
 Act as a **project manager focused on weekly sprint delivery**. Turn a goal
 and a pile of candidate tasks into a one-week sprint plan, coordinated
@@ -21,19 +21,19 @@ works, usually the following week.
 **Verification principle — batch it, one version at a time:** some issues
 can't be proven done by CI; they need a running environment. Those are marked
 at scoping time and verified **together, against one deployed version**,
-after the sprint deploys — never one issue at a time. Verifying issue by
-issue means redeploying dev per issue, so dev is never running one known
-version and nobody can say what's on it — and where the environment is
-provisioned on demand and torn down after, it means paying for one
-provision per issue instead of one per sprint. The umbrella carries the
-**verification queue** that makes this trackable. The queue is a
-follow-up list, not a gate: a flagged issue's PR merges and ships as soon
-as it is approved and green, and the check happens after the deploy.
-Work that has no open umbrella to carry it — a one-off issue, a hotfix,
-an issue a standalone skill filed, something that merged after its sprint
-closed — goes on the repo's **dedicated verification issue** instead, in
-the same row shape (`_shared/verification.md`), and the same pass reads
-both.
+after the release that carries them — never one issue at a time. Verifying
+issue by issue means redeploying dev per issue, so dev is never running
+one known version and nobody can say what's on it — and where the
+environment is provisioned on demand and torn down after, it means paying
+for one provision per issue instead of one per release. Verification
+follows the release, not the sprint: each flagged issue gets a row on the
+repo's **release verification ticket** (`_shared/verification.md`), with
+its **Sprint** column naming this umbrella, and the umbrella only links
+the ticket. A row is a follow-up, not a gate: a flagged issue's PR merges
+and ships as soon as it is approved and green, and the check happens
+after the release. Work outside any sprint — a one-off issue, a hotfix,
+an issue a standalone skill filed — has its row on the same ticket
+(**Sprint** `—`), and the same pass reads it.
 
 **Clarification principle — ask everything once, before the run:** some
 issues can't be implemented without a human deciding something — missing
@@ -172,10 +172,11 @@ weekly progress update instead of planning a new sprint.
    is optional and should stay the exception.
 
    The label and the steps are what the engineer copies into the PR and
-   what the row on the umbrella's queue (step 4) condenses. They change
-   nothing about when the PR merges: `needs-verification` is never a
-   reason to hold a PR, and never a reason to deploy one issue alone so
-   it can be checked.
+   what the item's row on the next release verification ticket condenses
+   — written at flag time, in step 4, once the umbrella has a number for
+   the row's **Sprint** column. They change nothing about when the PR
+   merges: `needs-verification` is never a reason to hold a PR, and never
+   a reason to deploy one issue alone so it can be checked.
 
    Then read each scoped issue **as the implementer will** and write down
    every point where they would have to guess. The test is concrete: could
@@ -231,30 +232,11 @@ weekly progress update instead of planning a new sprint.
    ## Critical path
    #12 → #14 — owner @assignee; everything else runs in parallel around it
 
-   ## Verification queue — batched, one deployed version at a time
-
-   Issues CI can't prove done. They are **not** verified as they merge —
-   their PRs merge and ship like any other; they wait here, and
-   `/qa-sprint-verify` checks them all together against the version
-   `/devops-deploy` puts on the environment. Row shape and legend per
-   `_shared/verification.md`.
-
-   **Deployed to dev:** _not yet_ — `<commit>` @ `<url>`, <date>
-   **Deployed to prod:** _n/a_
-
-   | Source | Verify | Expected | Env / version | Status | Verified on |
-   |--------|--------|----------|---------------|--------|-------------|
-   | #12 | upload a PDF on `/documents` | parsed result listed within 10s | dev | ⏳ awaiting deploy | |
-   | #14 | SSO login | redirects to dashboard | dev | ⏳ awaiting deploy | |
-   | #15 | `migrate up` on real-shaped data | no row loss | dev + prod | ⏳ awaiting deploy | |
-
-   Status legend: ⏳ awaiting deploy (merged, not on the env yet) ·
-   🔍 ready to verify (in the deployed commit) · ✅ verified on `<commit>` ·
-   ❌ failed (defect #N) · ⚠️ not verified (<why>) · ⏭ waived (<who + why>)
-
-   **Source** gains the PR number once one is open (`#12 / PR #20`), and
-   **Env / version** the merge commit the environment must contain
-   (`dev · needs abc1234`); **Verified on** is filled only by a pass.
+   ## Verification
+   **Release verification:** #<ticket> — the rows for this sprint's
+   `needs-verification` issues live there (**Sprint** = this umbrella),
+   not here. Nothing on it blocks a merge; a row not in that release's
+   tag rolls forward to the next ticket (`_shared/verification.md`).
 
    ## Open questions — answered before the cycle runs unattended
 
@@ -276,8 +258,9 @@ weekly progress update instead of planning a new sprint.
    - Progress updates posted here as comments (weekly, or when status changes)
    - Definition of done for the sprint: <the flow> works end-to-end,
      demonstrated (link a recording/screenshot/e2e report), and every
-     verification row is carried to the release issue and checked on the
-     released version by the post-release pass (`/release-verify`)
+     `needs-verification` issue has its row on the release verification
+     ticket, to be checked on the released version by the post-release
+     pass (`/release-verify`)
 
    ## Status
    🟢 on track | 🟡 at risk | 🔴 blocked — updated in weekly comments
@@ -300,12 +283,33 @@ weekly progress update instead of planning a new sprint.
    spot-check one child: its body must show both the `**Blocked by:**` and
    the `**Sprint:**` line as written.
 
+   **Then write the verification rows** — one per issue flagged in
+   step 3, on the repo's **next** release verification ticket (the open
+   `release`-labelled ticket whose **Tag** field is empty):
+
+   ```bash
+   gh issue list --label release --state open --json number,title,body
+   ```
+
+   Append each row in the shape `_shared/verification.md` defines:
+   **Source** the issue, **Sprint** `#<umbrella>`, **Verify** and
+   **Expected** condensed from the issue's **Verify on** steps,
+   **Env / version** `<env> · needs merge`, **Status** ⏳ awaiting deploy.
+   No next ticket open (first use in this repo) → open one from the
+   template in that file and write the rows on it. More than one
+   untagged ticket → stop and report it; `/release-verify` settles which
+   one stays. Put the ticket's number in the umbrella's
+   **Release verification** line. From here the row has other owners
+   (the lifecycle table in `_shared/verification.md`); this skill reads
+   it and does not re-status it.
+
 5. **Present the plan**
 
    > "Sprint <YYYY-Www> created: umbrella #N with X Phase 1 tasks (flow) and
    > Y Phase 2 tasks (optimize). Critical path: #a → #b → #c.
-   > Verification queue: Z issues need a deployed environment (#12, #15,
-   > #18) — batched into one pass after the sprint deploys.
+   > Verification: Z issues need a deployed environment (#12, #15, #18)
+   > — rows on release verification ticket #T, checked in one batched
+   > pass after the release.
    > Open questions: Q rows on the umbrella (#14, #15, #17) — answer them
    > there before running the cycle unattended; the defaults are listed.
    > Run `/pm-sprint-delivery update` for the weekly progress update."
@@ -321,20 +325,26 @@ weekly progress update instead of planning a new sprint.
    - Check each child issue's state (`open/closed`), linked PRs, and recent
      activity
    - Tick completed checkboxes in the umbrella body
-   - Refresh the verification queue from evidence:
-     - a `needs-verification` issue whose PR merged → ⏳ awaiting deploy
-     - the newest `/devops-deploy` comment names a commit; any ⏳ item whose
-       merge commit is contained in it → 🔍 ready to verify (an item merged
-       *after* that commit stays ⏳ — it is not on the environment)
-     - `/qa-sprint-verify` results → ✅ with the commit / ❌ with the defect
-       number / ⚠️ with the reason
-     - a newly-flagged issue (engineer added `needs-verification` mid-sprint)
-       → new queue row, and say so in the comment: the queue grew. Its
-       PR does not wait for the row — if it already merged, the row
-       starts ⏳ like any other
-     - a row an engineer put on the repo's **verification issue** for an
-       issue that is `Part of` this umbrella → leave it there and link it
-       from the update; rows are never copied between queue homes
+   - Read this sprint's verification rows — read, never re-status. List
+     the repo's open release verification tickets
+     (`gh issue list --label release --state open --json number,title,body`)
+     and filter each one's **Sprint** column by this umbrella:
+     - which ticket each row is on — the next ticket (waiting for a cut)
+       or a tag's pending ticket — and its status as written there
+       (⏳ / 🔍 / ✅ with the commit / ❌ with the defect number / ⚠️ with
+       the reason / ⏭)
+     - a newly-flagged issue (engineer added `needs-verification`
+       mid-sprint) → its row is the engineer's to write, on the next
+       ticket, before review; say so in the comment: the sprint's
+       verification list grew
+     - a flagged issue in this sprint with **no row on any ticket** →
+       name it in the update as unrecorded: still open with
+       `needs-verification`, the row is owed before `/reviewer-pr`
+       approves; merged with `awaiting-verification`, it is
+       `/release-verify`'s to give a row
+     - rows are never copied onto the umbrella and never moved by this
+       skill; a row that rolled to another ticket is followed there, and
+       the umbrella's **Release verification** line is updated to name it
    - Refresh the open questions from evidence:
      - a decision comment or edited criteria on the issue → ✅ decided,
        linked; remove `needs-decision`; the issue is ready again
@@ -358,8 +368,9 @@ weekly progress update instead of planning a new sprint.
      **Blocked:** #16 — waiting on <what>; needs <who/decision>
      **Critical path:** #12 merged, #14 in review — on schedule | slipping <by how much, and what unblocks it>
      **Flow status:** <does the end-to-end flow work yet? demo link if yes>
-     **Verification:** 2 ✅ on `abc1234` (dev), 1 ❌ (#19 → defect #31),
-     2 ⏳ awaiting the next deploy (#23, #24)
+     **Verification:** `v1.3.0` ticket #61 — 2 ✅ on `abc1234` (dev),
+     1 ❌ (#19 → defect #31); next ticket #64 — 2 ⏳ waiting for the cut
+     (#23, #24)
      **Open questions:** 1 ❓ (#15, 3d — 🕒 escalated to <architect>),
      2 ✅ decided this week
      ```
@@ -370,11 +381,13 @@ weekly progress update instead of planning a new sprint.
    - Report merged-but-unverified work as **shipped, awaiting
      verification** — its own line, not under *Blocked* and not under
      *Done*. It becomes a problem only past the thresholds in
-     `_shared/verification.md`: ⏳ items older than a couple of days are
-     a deploy that hasn't happened, 🔍 items older than a day are a pass
-     that hasn't run. Name it and ask DevOps for the deploy or QA for the
-     pass — the fix is one deploy for the batch, never a per-issue deploy
-     that leaves dev on an unknown version
+     `_shared/verification.md`, whose clock starts at the tag: a cut tag
+     with no deploy record for its commit, or a deploy of the tag's
+     commit with no pass run. Rows on the next ticket are waiting for a
+     cut and are never overdue. Name an overdue one and ask DevOps for
+     the deploy of the tag or QA for the pass — the fix is one deploy
+     for the batch, never a per-issue deploy that leaves dev on an
+     unknown version
    - If a task stalled all week: flag it explicitly with what decision or
      help is needed — a silent stalled task is a PM failure
 
@@ -382,18 +395,22 @@ weekly progress update instead of planning a new sprint.
 
    - Verify the sprint's definition of done: the flow works, with evidence
      linked in the umbrella issue
-   - **Clear the verification queue first** — every row must be ✅ (with the
-     commit it was verified on), ❌ with a filed defect, or ⏭ waived with the
-     user's explicit say-so and a reason. Rows still ⏳ or 🔍 mean the sprint
-     shipped work nobody checked: run `/devops-deploy` then
-     `/qa-sprint-verify`, or **carry the rows** — to the next sprint's
-     umbrella queue if one is being opened now, otherwise to the repo's
-     verification issue (`_shared/verification.md`; open it if none is).
-     A carried row keeps its status and gains a `carried from #<umbrella>`
-     note; the closing summary links where each one went. Rows are moved
-     or cleared, never dropped — do not close over them
-   - Post a closing summary comment: shipped vs. planned, the verification
-     pass result (env, commit, ✅/❌/⚠️ counts), what carried over and why
+   - **Check every flagged item has its row** — each sprint issue
+     labelled `needs-verification` or `awaiting-verification` must match
+     a **Source** cell, with **Sprint** naming this umbrella, on one of
+     the repo's release verification tickets. Rows still ⏳ or 🔍 do not
+     hold the close and nothing is carried: the rows live on the release
+     ticket, not on the umbrella, so closing the umbrella loses none of
+     them, and they are checked by the post-release pass on the version
+     that carries them (`_shared/verification.md`). A flagged issue with
+     no row is the one thing to settle here: not yet merged → write its
+     row on the next ticket now (step 4); already merged → report it as
+     unrecorded and hand it to `/release-verify refresh`, which places
+     the row by its merge commit. Do not close over an item that is
+     recorded nowhere and reported nowhere
+   - Post a closing summary comment: shipped vs. planned, where the
+     sprint's verification rows stand (ticket, counts by status, any
+     unrecorded item), what carried over and why
    - Move unfinished tasks into the next sprint's umbrella (create it if the
      user wants to roll straight into planning the next week)
    - Close the umbrella issue; leave child issues open if their work
@@ -418,9 +435,11 @@ weekly progress update instead of planning a new sprint.
   one issue so it can be verified alone, and never accept a verification
   result that doesn't name the environment and commit it ran on. The dev
   environment runs one known version per cycle; that is the point
-- A merged PR is not a verified issue. `needs-verification` issues stay on
-  the queue until a pass clears them, even when the issue is closed by its
-  PR — closing on merge is fine, ticking the queue row on merge is not
+- A merged PR is not a verified issue. A flagged issue's row stays open
+  on the release verification ticket until a pass stamps it, even when
+  the issue is closed by its PR — closing on merge is fine, calling it
+  verified on merge is not; the merge only advances the label to
+  `awaiting-verification`
 - **Verification is never a merge gate.** Never ask that a
   `needs-verification` PR wait for its check before merging, and never
   report a merged-but-unverified issue as blocked or not done — it is
@@ -429,11 +448,15 @@ weekly progress update instead of planning a new sprint.
   `/merge-steward` never holds for verification, and `/release-verify`
   catches anything unrecorded before the post-release pass
   (`_shared/verification.md`)
-- Every verification item has exactly one queue home — this umbrella's
-  queue for issues in the sprint, the repo's verification issue for
-  everything else — and a sprint never closes with rows that went nowhere
-- Waiving a verification item is the user's call, recorded on the umbrella
-  with a reason — never a quiet ⏭ to make the close look clean
+- Every verification item has exactly one row, on the release
+  verification ticket. This skill writes it at scoping time with
+  **Sprint** naming the umbrella, never keeps a copy on the umbrella, and
+  never moves it between tickets (`/release-verify` does, by merge-commit
+  ancestry) — and a sprint never closes with a flagged issue that has no
+  row and no mention
+- Waiving a verification item is the user's call, recorded on the release
+  verification ticket by `/release-verify` with who and why — never a
+  quiet ⏭ to make the close look clean
 - **Questions are batched, never drip-fed.** Every point an implementer
   would have to guess is found at scoping time and asked in one place,
   with its default, before the cycle runs unattended. An issue with an

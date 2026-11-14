@@ -84,6 +84,17 @@ Instead of a local worktree, run the issue in its own box. The agent keeps
 running if the session drops, the box is disposable, and no credential has
 to be placed in it.
 
+> **Scope: this launcher implements an issue. It is not the path for
+> work on an open PR.** On a connection-bound run, reviewing a PR and
+> updating one (a revision after review, a fix for red CI, a branch sync)
+> are asked of the platform with `@containarium review` and
+> `@containarium changes <text>` — see "PR commands" in
+> `_shared/tracker-containarium.md`. Those commands are the preferred
+> path; a box agent we launch ourselves (the steps below) or a local
+> worktree is the fallback, used only when the command is *unavailable*,
+> never when it was *refused*. The "never fall back silently" rule above
+> covers this too: the first report line says which path ran.
+
 1. **Box** — `create_container` named `issue-<N>-<repo>` (sizing as
    `/devops-containarium-env` capability 8). Verify the runtime's CLI is on
    it before dispatching; the box needs the coding toolchain installed

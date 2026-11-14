@@ -88,6 +88,15 @@ else. Someone else watches the gate:
    dev container, note in the PR that there was no CI to gate on, and raise
    adding a CI lane as its own issue
 
+**Starting an issue — on a Containarium connection ask the platform first**
+
+When the run is bound to a Containarium connection and you are the
+dispatcher rather than the implementer, start the issue with
+`@containarium start` on it instead of launching a box or worktree
+yourself; the contract, the refused-versus-unavailable rule and the report
+line are "Starting an issue" in `_shared/tracker-containarium.md`. If you
+**are** the run the platform started, implement as the steps below say.
+
 **Revising an open PR — on a Containarium connection the platform runs it**
 
 A revision pass is any later change to a PR that is already open: review

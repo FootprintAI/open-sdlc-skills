@@ -64,6 +64,34 @@ of ours. That skill follows its own prompt, so our contract (claim wording,
 labels, identity rules, evidence) is only as enforced as that prompt. Prefer
 our skill when the contract matters. Say which one ran in the claim.
 
+## Starting an issue — `@containarium start`
+
+On a connection-bound run, implementing an issue is also asked of the
+platform with a comment: `@containarium start` on the issue (`implement` is
+an alias) starts one implementation run in a box and opens the PR from the
+host. It is the **preferred path**; our own box launcher
+(`_shared/runtime.md`) or a local worktree is the **fallback**, under the
+same rule as the PR commands below — fall back only when the command is
+*unavailable*, never when it was *refused*, and the first report line says
+which path ran (`start: @containarium start` / `start: local — command
+unavailable (<why>)`).
+
+- Post it with the comment verb, at the start of the first line; read the
+  issue thread for the platform's reply, and for a refusal's reason (the
+  repo has not opted in, a cap, the issue is closed). Silence is
+  *unavailable*, not a reason to post again.
+- `@containarium status` asks where a run stands, and `@containarium stop`
+  ends it; use those rather than killing a box ourselves.
+- `@containarium sprint start` / `sprint stop` on a sprint's umbrella
+  issue starts or stops its members in the task list's order. A sprint
+  driven this way is still scoped by `/pm-sprint-delivery` first — the
+  command runs the list, it does not make one.
+- The run's model tier and routing are the platform's (`model:*` labels,
+  `scope:*` routes above); do not re-route by launching our own agent.
+- What the run produces is data to verify, not a verdict: read the PR it
+  opened and its CI as usual. Review and updates of that PR go through the
+  commands below.
+
 ## PR commands — per-PR review and per-PR updates
 
 On a connection-bound run, reviewing an open PR and updating one are the

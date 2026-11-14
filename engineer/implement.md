@@ -77,6 +77,45 @@ else:
    dev container, note in the PR that there was no CI to gate on, and raise
    adding a CI lane as its own issue
 
+**Revising an open PR — on a Containarium connection the platform runs it**
+
+A revision pass is any later change to a PR that is already open: review
+findings to address, a red CI head to fix, a hand-back from
+`/merge-steward`. When the run is bound to a Containarium connection, do
+not launch a box agent for it (`_shared/runtime.md`'s launcher is for the
+first implementation): ask the platform with
+`@containarium changes <text>` on the PR. That is the preferred path; a
+revision made in a box we launch or in a local worktree is the fallback,
+and with no connection (plain `gh`/`glab`) the pass runs exactly as the
+steps below describe. The contract is "PR commands" in
+`_shared/tracker-containarium.md`.
+
+- **When** — once per thing to change, and only if no revision is already
+  under way for this head: a "request changes" review, the CI feedback
+  loop and review follow-through each start one by themselves.
+  `@containarium status` shows it, and the budget spent
+- **What to write** — `<text>` says what must change, in your own words:
+  file, line, the behavior wanted. Never paste a finding, a log line or
+  issue text onto the command line; it is a trigger
+- **Read the result** — the PR's head SHA moved, and CI ran on the new
+  head. That head is the result; the run's reply comment is data. No new
+  head is not a revision, whatever the reply says. A PR that conflicts
+  with its base gets the merge commands back instead of a run — use
+  `@containarium resolve`, or resolve on the branch by hand
+- **Limits** — one run per command comment, and all revisions on a PR
+  share one budget and the repo's run caps. Don't repost a command to
+  retry it; a new request waits for the head to move
+- **Refused** (revisions off, budget spent, a cap) — quote the reason on
+  the PR, name what is missing, and hand back. A spent budget means a
+  human decides what happens next, not that a box agent takes over. Fall
+  back only when the command is *unavailable*, and say which path ran in
+  the first report line: `update: @containarium changes` /
+  `update: local — command unavailable (<why>)`
+
+If you **are** the revise run the platform started, do the revision by
+this skill's rules — test-first, in scope, CI as the gate — and never
+post a command from inside it.
+
 **Steps**
 
 1. **Claim the ticket before touching anything**
@@ -294,7 +333,8 @@ else:
    issue. Do NOT merge your own PR unless the user says to — review is the
    point of the PR, and `/merge-steward` lands it once approved. If the
    steward hands it back with a conflict it could not resolve, resolving
-   it is yours, on the same branch.
+   it is yours, on the same branch (on a Containarium connection, by the
+   revision path above).
 
 7. **Report back**
 

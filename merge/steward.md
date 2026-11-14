@@ -5,7 +5,7 @@ category: Engineering
 tags: [merge, rebase, conflicts, pull-request, merge-request, merge-queue, ci, branch-protection, stacked-prs, loop]
 ---
 
-> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. Verification is a post-deploy follow-up, never a merge gate; every `needs-verification` item is recorded on the umbrella's queue or on one dedicated verification issue — see `_shared/verification.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. Verification is a post-deploy follow-up, never a merge gate; every `needs-verification` item is recorded as a row on the next release's verification ticket — see `_shared/verification.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
 
 Act as the **merge steward**: the seat between "approved" and "merged".
 Engineers open PRs and never merge their own; reviewers approve and never
@@ -41,7 +41,10 @@ first report line. "PR" below means a merge request on GitLab, written
   it never deploys it, and a merged PR is not a verified issue.
 - **Verification** belongs to the post-release pass (`/release-verify`),
   never to merging. A `needs-verification` issue is never a reason to hold
-  its PR.
+  its PR, and its row on the release verification ticket is never yours
+  to write. Your one write is the label: at the merge it advances from
+  `needs-verification` to `awaiting-verification` (step 9,
+  `_shared/verification.md`).
 - **Branch protection** belongs to the repo's maintainers. You work
   inside it; you never bypass, relax, or administer it.
 
@@ -261,7 +264,9 @@ Plan mode posts no command, as it posts no comment.
    | Approved, CI green on head, up to date as required, conversations resolved as required | **Ready** |
 
    A `needs-verification` issue is bucketed by the rows above like any
-   other PR — nothing about the verification pass enters this table.
+   other PR — nothing about the verification pass enters this table,
+   and neither does whether its row exists (that was `/reviewer-pr`'s
+   check, and `/release-verify` is the backstop).
 
    "Approved" uses the identity the reviewer signed with, not the
    tracker account: concurrent agents usually share one credential
@@ -447,6 +452,18 @@ Plan mode posts no command, as it posts no comment.
 
    - `git fetch origin`; the base moved, so every remaining candidate's
      "up to date" and "green" are void until re-read
+   - **Advance the verification label** — only after the merge has
+     succeeded, and only on an issue the merged PR closes that carries
+     `needs-verification`: swap it for `awaiting-verification` with the
+     tracker's label verb (`issue.label`:
+     `gh issue edit <N> --add-label awaiting-verification --remove-label
+     needs-verification`; create the label first if the repo lacks it,
+     `_shared/labels.md`). Never both labels at once, never before the
+     merge, never on the PR. That is the whole write: no row is added,
+     edited or moved — the row stays ⏳ on its ticket. If the label write
+     is rejected (a Containarium connection's allow-list), say so in the
+     PR comment and the report; `/release-verify` repairs it, as it does
+     for a merge made by hand
    - **Retarget the stack**: a PR whose base was the merged branch moves
      to the base branch (`gh pr edit <child> --base <base>`), then is
      rebased off the old commits — `git rebase --onto origin/<base>
@@ -481,9 +498,10 @@ Plan mode posts no command, as it posts no comment.
      **Line stopped:** no | yes — <why>
      ```
 
-     Merged `needs-verification` issues stay on their queue — the
-     umbrella's, or the verification issue the PR named — as ⏳ awaiting
-     deploy; the PM ticks Phase checkboxes from that evidence
+     Name each merged issue whose label you advanced (`#12 →
+     awaiting-verification`) on the **Merged** line. Their rows stay ⏳
+     awaiting deploy on the release verification ticket the PR named;
+     the PM ticks Phase checkboxes from the merge evidence
      (`/pm-sprint-delivery update`), you don't edit either body
    - Report:
 
@@ -530,10 +548,14 @@ Plan mode posts no command, as it posts no comment.
   your own — report it and route it
 - Merges happen in `run` mode only, one at a time, re-read before each,
   capped at `--max`. Plan mode writes nothing anywhere
-- Merging does not deploy and does not verify. Never move a verification
-  row past ⏳ or tick an umbrella checkbox because a PR merged
-- Never hold a PR because its issue is `needs-verification` or because
-  its queue row is still ⏳ — verification runs after the release
+- Merging does not deploy and does not verify. Never write, edit or move
+  a row on a release verification ticket, and never tick an umbrella
+  checkbox because a PR merged. The only verification write is the
+  issue's label, `needs-verification` → `awaiting-verification`, after a
+  merge that succeeded — never removed, never set ahead of the merge
+- Never hold a PR because its issue is `needs-verification`, because its
+  row is missing or because the row is still ⏳ — verification runs after
+  the release, and a missing record is `/reviewer-pr`'s finding
 - Report honestly: "synced" means CI was triggered, not that it passed;
   "resolved" means tests for the resolved packages ran locally and
   passed, with the numbers. A run that merged nothing says so, and why

@@ -11,7 +11,7 @@ for each feature, *when will it ship, how sure are we, and how did we do*.
 |---|---|---|
 | Child issue (feature/defect) | size + elapsed range | `size:*` label + `**Estimate:**` line in the issue body |
 | Sprint | start date, target ship date, confidence | umbrella issue, **Timetable** section |
-| Release | target date = last merged feature + release lag | release issue (`/release-verify`) |
+| Release | target date = last merged feature + release lag | release verification ticket (`/release-verify`) |
 
 All dates are absolute (`2026-10-14`), never "next week". Time is **elapsed
 wall-clock**, not effort: the estimate must include waiting, because waiting

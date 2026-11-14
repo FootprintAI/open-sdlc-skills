@@ -1,11 +1,11 @@
 ---
 name: "DevOps: Deploy"
-description: Deploy a service on Containarium — the Cloud control plane or a self-hosted daemon. The flow is git-native: commit locally, push/sync to the remote container so the remote state exactly matches the committed local state, then run and verify the service there. Deploys only committed state, verifies health after every deploy, and treats prod as confirmation-gated. Records the deployed commit on the sprint umbrella and opens the batched verification window for the issues that version now carries; for a container provisioned per pass, deletes it again only once the pass's results are on the umbrella.
+description: Deploy a service on Containarium — the Cloud control plane or a self-hosted daemon. The flow is git-native: commit locally, push/sync to the remote container so the remote state exactly matches the committed local state, then run and verify the service there. Deploys only committed state, verifies health after every deploy, and treats prod as confirmation-gated. Records the deployed commit on every open release verification ticket with a row that commit contains, flips those rows from awaiting deploy to ready to verify, and opens the batched verification window; for a container provisioned per pass, deletes it again only once the pass's results are on the ticket.
 category: DevOps
 tags: [devops, deploy, containarium, git, sync, docker, containers, verification, sprint, teardown, ephemeral]
 ---
 
-> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. Verification is a post-deploy follow-up, never a merge gate; every `needs-verification` item is recorded on the umbrella's queue or on one dedicated verification issue — see `_shared/verification.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
+> **Conventions notice:** every issue you open carries one type label (`bug`, `feature-request`, `epic`, `ci`, `docs`, `security`, `chore`) — see `_shared/labels.md`. Work routed to an agent names its runtime (`runtime:claude` default, `runtime:codex`) — see `_shared/runtime.md`. Sprints and features carry a time estimate (size label, P50/P80 dates, Timetable on the umbrella) — see `_shared/estimates.md`. Verification is a post-deploy follow-up, never a merge gate; every `needs-verification` item is recorded as a row on the next release's verification ticket — see `_shared/verification.md`. On a Containarium tracker connection use `_shared/tracker-containarium.md` for the tracker verbs.
 
 Act as the **DevOps role** deploying services on **Containarium**, driven
 through its MCP tools or the `containarium` CLI. The deployment model is
@@ -44,14 +44,14 @@ a prod backend.
 - **A deploy isn't done until verified** — the service responding
   correctly on its route is the definition of deployed; a synced container
   with a dead process is an outage with extra steps
-- **One container per verification pass** — when the sprint's verification
+- **One container per verification pass** — when the batched verification
   runs on a container created for it rather than the standing `demo` one,
   its lifetime is the batched pass: create once, run every ready item
   against that one commit, delete once. A container per issue multiplies
-  the backend cost by the queue length and leaves nobody able to say
+  the backend cost by the row count and leaves nobody able to say
   which version any result was checked on. Deletion waits for the results
-  to be on the umbrella, because the container is the only place the
-  evidence can be taken
+  to be on the release verification ticket, because the container is the
+  only place the evidence can be taken
 
 **Steps**
 
@@ -113,7 +113,7 @@ a prod backend.
      `/qa:e2e-test` happy-path pass against the deployed URL — QA's
      screenshots against the live environment are the deploy's proof
 
-   This verifies the *deploy*. Verifying the *sprint's issues* is the
+   This verifies the *deploy*. Verifying the *issues it carries* is the
    batched pass in step 7 — a different question, answered once per
    deployed version.
 
@@ -123,54 +123,58 @@ a prod backend.
    > (remote == local commit), compose up, health check passing at
    > `<url>`, metrics normal. Rollback point: `<previous-commit>`."
 
-   Comment the deployed commit and URL on the sprint umbrella issue (or the
-   release issue) for **every** environment, not just prod — the umbrella is
-   where the team reads what version each rung is running, and step 7 needs
-   that record. If the repo has an open **verification issue**
-   (`_shared/verification.md` — label `verification`), it is a queue home
-   too: post the same record there. If an open **release issue** exists
-   (`epic` + `release`, from `/release-verify`), post the record there as
-   well — it is a ledger, not a queue home, so it has no rows to flip.
+   Post the deploy record — commit and URL — for **every** environment,
+   not just prod, as a comment on **every open release verification
+   ticket with a row that commit contains** (`_shared/verification.md`;
+   step 7 finds them and flips those rows). The ticket is where the team
+   reads what version each rung is running against the rows that need it.
    When the deploy was asked for by tag, the record names the tag and its
-   commit (`vX.Y.Z` = `<sha>`); a record whose commit equals the tag's
-   commit is the one `/release-verify released` needs, whether or not
-   anything was redeployed to produce it. A deploy never waits for queue
-   rows to be checked; it is what makes them checkable.
+   commit (`vX.Y.Z` = `<sha>`) and also goes on that tag's ticket, rows or
+   none; a record whose commit equals the tag's commit is the one
+   `/release-verify released` needs, whether or not anything was
+   redeployed to produce it.
 
-7. **Open the verification window on the sprint umbrella**
+   **No open ticket has a row in this commit** (and the deploy was not by
+   tag) → post the record once on the **next ticket** (the open
+   `release`-labelled ticket with no **Tag**), flip nothing and open no
+   window. No ticket open at all → the record is this report; do not open
+   a ticket just to hold a deploy record. When a sprint cycle asked for
+   the deploy, also comment the commit and URL on its umbrella — that is
+   the cycle's own evidence, not a queue. A deploy never waits for rows to
+   be checked; it is what makes them checkable.
 
-   A deploy is what makes the sprint's unverifiable-by-CI work verifiable.
+7. **Open the verification window on the release verification ticket**
+
+   A deploy is what makes the unverifiable-by-CI work verifiable.
    Because the environment now runs one known version, everything waiting on
    it gets checked together:
 
-   - Find every **queue home** in the repo: each open sprint umbrella's
-     **Verification queue** (from `/pm-sprint-delivery`) and the open
-     **verification issue**, if any:
+   - Find the repo's open **release verification tickets** — the next
+     ticket (no **Tag**) and a pending ticket per cut tag:
 
      ```bash
-     gh issue list --label sprint --state open --json number,title,body
-     gh issue list --label verification --state open --json number,title,body
+     gh issue list --label release --state open --json number,title,body
      ```
 
-     No home with rows → nothing to do; say so and stop here. The
-     environment belongs to all of them jointly: a deploy carries whatever
-     is merged, whichever home its row sits on — several umbrellas, an
-     umbrella plus the verification issue, or the verification issue
-     alone (a hotfix, a one-off, a CVE fix with no sprint open). Check
-     every home's rows and flip ⏳ → 🔍 wherever the row's merge commit is
-     contained, posting the window on each home that gained a 🔍 row
-   - Work out which queued issues are actually *in* this commit:
+     No ticket with rows → nothing to flip; say so and stop here (step 6
+     says where the record goes). A deploy carries whatever is merged,
+     whichever sprint scoped it or none (**Sprint** `—`: a hotfix, a
+     one-off, a CVE fix). Check every open ticket's rows and flip ⏳ → 🔍
+     wherever the row's merge commit is contained, posting the record and
+     the window on each ticket that has such a row. **Status** is the only
+     cell this skill edits; it never adds, moves or removes a row
+   - Work out which rows are actually *in* this commit:
 
      ```bash
      git log --oneline <previously-deployed>..<deployed-commit>   # what shipped
      git branch --contains <issue-merge-commit> --merged <deployed-commit>
      ```
 
-     Queue items whose merge commit is contained → **🔍 ready to verify**.
-     Items merged after this commit stay **⏳ awaiting deploy** — they are
+     Rows whose merge commit is contained → **🔍 ready to verify**.
+     Rows merged after this commit, or still `needs merge`, stay **⏳ awaiting deploy** — they are
      not on the environment, and claiming otherwise is how a "verified"
      result ends up describing code that isn't running
-   - Post one comment on the umbrella opening the window:
+   - Post one comment on the ticket opening the window:
 
      ```markdown
      ## Demo deploy — `abc1234` @ https://demo.example.com — <date>
@@ -180,11 +184,15 @@ a prod backend.
      **Ready to verify (🔍):** #12, #15, #18
      **Still awaiting deploy (⏳):** #23 (merged after this commit)
 
-     Next: `/qa:sprint-verify --env demo` — one pass, this commit, all three.
+     Next: `/release-verify released --tag vX.Y.Z --env demo` once the tag
+     is cut — one pass, this commit, all three.
      ```
 
-   - Then hand off to `/qa-sprint-verify`. Do not verify the queue's issues
-     yourself item by item, and do not redeploy while a pass is running — a
+   - Then hand off. The pass that decides a row is the post-release one,
+     on the tag's commit; a deploy of `main` before the cut opens the
+     window for an optional pre-release `/qa-sprint-verify` pass, whose
+     results are notes, not statuses. Do not verify the rows yourself
+     item by item, and do not redeploy while a pass is running — a
      verification pass split across two versions proves nothing about either
    - When the deploy is of a **release tag**, the pass is the post-release
      one: `/release-cut` hands the tag to `/release-verify released --tag
@@ -192,7 +200,7 @@ a prod backend.
      single `/qa-sprint-verify` pass — one pass either way, never two. Do
      not start a second pass yourself
 
-   For **prod** deploys, the same applies for queue items flagged
+   For **prod** deploys, the same applies for rows flagged
    `demo + prod`; the prod pass covers only those.
 
    If the container was **created for the pass**, say so in the window
@@ -206,15 +214,14 @@ a prod backend.
    The container's job was one batched pass. It is deleted once, after
    that pass, on evidence that the pass is actually finished:
 
-   - Read every queue home step 7 posted a window on (umbrella(s) and the
-     verification issue). The newest `/qa-sprint-verify` results comment
-     on each for this environment must name the commit step 7 opened the
-     window on, and every ❌ row in it must already carry a defect number — a ❌ with
+   - Read every release verification ticket step 7 posted a window on.
+     The newest `/qa-sprint-verify` results comment for this environment
+     must name the commit step 7 opened the window on, and every ❌ row in it must already carry a defect number — a ❌ with
      no defect still needs the container for `/qa-issue-report` to capture
      its repro. Any of that missing → **do not tear down**; report what is
      outstanding and stop
    - Confirm no pass is in flight: nobody has claimed the window without
-     posting results (ask on the umbrella if in doubt — a deleted container
+     posting results (ask on the ticket if in doubt — a deleted container
      mid-pass discards every item verified so far)
    - Confirm every evidence link in the results comment points somewhere
      that outlives the container (the e2e report committed to the repo,
@@ -229,7 +236,7 @@ a prod backend.
    - Release it: `list_routes` → `delete_route` for anything pointing at it,
      `compose_disable`, then `delete_container`. `list_containers` afterwards
      to confirm it is gone and the standing `demo` container is untouched
-   - Post on the umbrella:
+   - Post on the same ticket(s):
 
      ```markdown
      ## Verification container deleted — was `verify-sprint12-abc1234` @ https://verify-…
@@ -240,8 +247,8 @@ a prod backend.
      Items still ⏳ (#23, #24) go to the next container.
      ```
 
-   The umbrella's **Deployed to dev** line then reads "torn down — was
-   `<commit>`", so nobody reads a dead route as a running version.
+   That record is what says "torn down — was `<commit>`", so nobody
+   reads a dead route as a running version.
 
 **Rollback**
 
@@ -273,11 +280,15 @@ loudly, because data rollback is never silent.
   while a `/qa-sprint-verify` pass is in flight. Shared environments run one
   known commit; a request to "just push my fix to demo for a minute" is
   answered with the next batched deploy
-- Every deploy records its commit and URL on the sprint umbrella — and on
-  the repo's open verification issue when there is one — for every rung;
-  a deployed version nobody can name is a version nobody can verify
-  against
-- A deploy never waits for a queue row to be verified, and never skips a
+- Every deploy records its commit and URL on every open release
+  verification ticket with a row that commit contains — on the tag's
+  ticket when deploying a tag, on the next ticket when no row is in the
+  commit — for every rung; a deployed version nobody can name is a
+  version nobody can verify against
+- Never write a row, move one between tickets, stamp a ✅/❌/⚠️ or touch
+  the `needs-verification` / `awaiting-verification` labels — ⏳ → 🔍 on
+  rows the commit contains is this skill's only edit to a ticket
+- A deploy never waits for a row to be verified, and never skips a
   merged commit because its rows are unchecked — merge, deploy, then
   verify is the order; the pass needs this deploy to exist
 - **Never delete a container ahead of its results.** No results comment
@@ -287,7 +298,7 @@ loudly, because data rollback is never silent.
   pass that has to be re-created and re-run is the whole thing the batch
   was meant to save
 - `teardown` deletes only a `verify-*` container on a dev backend, by the
-  name recorded on the umbrella. Never the standing `demo` container, never
+  name recorded in the window comment. Never the standing `demo` container, never
   anything on a prod backend — on those, "release" means deploy the
   next version, never `delete_container`
 - This skill deploys and verifies — it does not write application code

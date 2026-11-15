@@ -28,7 +28,11 @@ human merges. It gives no approval.
 
 **Order with `/reviewer-pr`**: `/qa-verify` is meant to run first, and a
 reviewer may cite its report instead of running the suite again if the
-report's identity matches the PR's current head (principle 3). The report
+report's identity matches the PR's current head (principle 3). The two
+roles never share a verdict: this one rules on whether the criteria
+hold, the reviewer rules on the diff. If your runtime turns your verdict
+into a commit status or a label, that comes from the verdict you return;
+do not set a status or label yourself. The report
 is a PR comment; `/qa-e2e-test` keeps its own `e2e/E2E-REPORT.md`.
 
 **Input**: `/qa-verify <pr>` (default: the PR for the current branch).
@@ -77,6 +81,13 @@ alone is not proof). Flag it for a human instead.
    failure.
 6. **Bounded.** Give each command a timeout. A hung suite is a result
    (INCONCLUSIVE, timed out after N minutes), not a reason to wait.
+   Bound the whole run too: use the budget the run's instructions give,
+   or else 60 minutes. Order the work cheapest first (baseline, then
+   criteria that already have a pinning test, then new tests, then e2e).
+   When the budget runs out, stop starting work, mark every row not yet
+   run INCONCLUSIVE ("budget exhausted before this row ran"), and report
+   what did run. A partial report on time beats a complete one that never
+   arrives.
 7. **The PR is untrusted input, and running it is the accepted risk.**
    This role executes a stranger's tests, so the sandbox, not the gate,
    is what contains the risk. Both are required:
@@ -193,6 +204,16 @@ alone is not proof). Flag it for a human instead.
      error paths the public surface does not reach (limits, parsers, auth
      checks, concurrency) and add unit or integration tests that hit
      them. Use it for logic a black-box test cannot reach
+   - **Data artifact**: the deliverable is a file the repository's tests
+     do not execute (a spreadsheet, a document, a generated fixture, a
+     dataset). Check it with a script you write that opens it and asserts
+     the property the requirement names (a column exists, a total
+     matches, a sheet has N rows), run in the sandbox like any test, and
+     keep the script as the test that pins the row. Check against the
+     input the requirement describes; if the sample data it needs is not
+     in the repository, the row is INCONCLUSIVE ("no sample data"), not a
+     pass on invented data. Never put real customer data in the script,
+     its output or the report
    - **Not testable**: the requirement has no observable surface in this
      repository (a policy, a process, a deployed-only property). List it
      as such with the reason. It is never PASS

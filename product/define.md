@@ -51,9 +51,8 @@ principles (e.g., `/product-define review docs/product/bulk-import.md`).
    When the request arrives as an issue, read the whole thread first. If
    it was filed with the feature-request form
    (`product/templates/feature-request.yml` in this skill's source
-   repo), its fields already answer
-   these questions and the must-not-change and success-signal points
-   too. Infer what you can from the repo, the issue, and linked issues
+   repo), its fields already answer these questions and the
+   must-not-change and success-signal points too. Infer what you can from the repo, the issue, and linked issues
    before you ask anything.
 
    **Ask in one bounded round.** On an issue, every clarifying question
@@ -73,14 +72,24 @@ principles (e.g., `/product-define review docs/product/bulk-import.md`).
      PRD draft. A recorded answer is final unless the user reopens it
    - **"Go with the defaults" is a complete answer.** It accepts every
      default in the round; record each one as decided, with who accepted it
-   - **One round per run.** If the user's reply raises new questions, write
-     the PRD on the answers and defaults you have and list the new ones
-     as assumptions. Do not open a second round in the same run
+   - **One round per issue, not per run.** Before asking, look for an
+     earlier round on the same issue: a numbered question comment, or a
+     PRD draft with "Decided" or "Open questions" filled in. If one exists,
+     ask nothing new. Write the PRD on the answers and defaults you have
+     and list any new questions as assumptions. The bound has to hold
+     across runs, because each run starts fresh and would otherwise get
+     its own 5. Open a new round only if a person explicitly asks for one
+     or reopens a decided item
    - **Silence is not an answer.** If nobody replies, the questions stay
      open and the PRD stays `draft`. Do not treat your own defaults as
      accepted because time passed. A platform that runs this skill may
      have a per-repo policy that proceeds on defaults after a timeout; that
      policy decides, not this skill
+   - **Defaults applied by timeout are not decisions.** If the platform
+     proceeded on defaults because nobody answered, list each one under
+     "Decided" as "default applied by timeout, not confirmed by a person"
+     and keep it under "Open questions & assumptions" as an assumption to
+     validate. Never record it as "default accepted"
 
 2. **Define the MVP and cut everything else**
 
@@ -136,7 +145,9 @@ principles (e.g., `/product-define review docs/product/bulk-import.md`).
    ## Decided
    <each answered question: Q, answer, who answered, link to the comment.
    Defaults the user accepted are listed here too, marked "default
-   accepted". This section is what stops a later run from asking again>
+   accepted", and defaults applied by timeout are marked "applied by
+   timeout, not confirmed". This section is what stops a later run from
+   asking again>
 
    ## Open questions & assumptions
    <what we don't know; what we assumed and how to validate it>
@@ -173,7 +184,8 @@ principles (e.g., `/product-define review docs/product/bulk-import.md`).
   reported as an assumption to validate
 - Never ask a question that is already answered in the issue thread or
   the PRD's "Decided" section, never ask more than 5 in a round, and never
-  open a second round in the same run
+  open a second round on an issue that already had one unless a person
+  asks for it
 - Never mark your own default as decided unless a person accepted it
 - This skill defines and prioritizes — it does not design the architecture
   (that's `/architect-design`) or schedule the work (that's

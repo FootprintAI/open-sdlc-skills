@@ -2,6 +2,8 @@
 # .github/ISSUE_TEMPLATE/. Its required fields are the questions
 # /product-define must answer before it writes a PRD. Each field filled in
 # here is a clarifying round-trip the skill doesn't need.
+# GitHub silently skips labels the repo doesn't have: create them, or edit
+# the labels line to ones that exist.
 name: Feature request
 description: Propose a feature. These answers become the inputs to the PRD.
 title: "[Feature] "

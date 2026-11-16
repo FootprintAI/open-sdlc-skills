@@ -52,8 +52,8 @@ principles (e.g., `/product-define review docs/product/bulk-import.md`).
    it was filed with the feature-request form
    (`product/templates/feature-request.yml` in this skill's source
    repo), its fields already answer these questions and the
-   must-not-change and success-signal points too. Infer what you can from the repo, the issue, and linked issues
-   before you ask anything.
+   must-not-change and success-signal points too. Infer what you can
+   from the repo, the issue, and linked issues before you ask anything.
 
    **Ask in one bounded round.** On an issue, every clarifying question
    costs a round-trip of hours or days, so questions are a budget, not a
@@ -90,9 +90,9 @@ principles (e.g., `/product-define review docs/product/bulk-import.md`).
      policy decides, not this skill
    - **Defaults applied by timeout are not decisions.** If the platform
      proceeded on defaults because nobody answered, list each one under
-     "Decided" as "default applied by timeout, not confirmed by a person"
-     and keep it under "Open questions & assumptions" as an assumption to
-     validate. Never record it as "default accepted"
+     "Open questions & assumptions" as "default applied by timeout, not
+     confirmed by a person", an assumption to validate. Do not list it
+     under "Decided", and never record it as "default accepted"
 
 2. **Define the MVP and cut everything else**
 
@@ -148,9 +148,8 @@ principles (e.g., `/product-define review docs/product/bulk-import.md`).
    ## Decided
    <each answered question: Q, answer, who answered, link to the comment.
    Defaults the user accepted are listed here too, marked "default
-   accepted", and defaults applied by timeout are marked "applied by
-   timeout, not confirmed". This section is what stops a later run from
-   asking again>
+   accepted". Defaults applied by timeout go under open questions, not
+   here. This section is what stops a later run from asking again>
 
    ## Open questions & assumptions
    <what we don't know; what we assumed and how to validate it>

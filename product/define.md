@@ -48,6 +48,40 @@ principles (e.g., `/product-define review docs/product/bulk-import.md`).
    - Why now — what makes this worth building this quarter?
    - What evidence exists (issues, tickets, user quotes, metrics)?
 
+   When the request arrives as an issue, read the whole thread first. If
+   it was filed with the feature-request form
+   (`product/templates/feature-request.yml` in this skill's source
+   repo), its fields already answer
+   these questions and the must-not-change and success-signal points
+   too. Infer what you can from the repo, the issue, and linked issues
+   before you ask anything.
+
+   **Ask in one bounded round.** On an issue, every clarifying question
+   costs a round-trip of hours or days, so questions are a budget, not a
+   reflex:
+
+   - **Materiality test.** Ask only what would change the MVP scope, a P0
+     story, or a success metric. Anything else becomes an assumption in the
+     PRD's "Open questions & assumptions" section. Do not ask about it
+   - **At most 5 questions**, all in one message, numbered, each with
+     the default you will use if the user accepts the defaults ("Q2:
+     single-tenant only? Default: yes, multi-tenant is later phase"). If
+     more than 5 pass the materiality test, ask the 5 that change the most
+     and record the rest as assumptions with their defaults
+   - **Never re-ask.** Before asking, collect every answer already given:
+     earlier comments on the issue, and the "Decided" section of an existing
+     PRD draft. A recorded answer is final unless the user reopens it
+   - **"Go with the defaults" is a complete answer.** It accepts every
+     default in the round; record each one as decided, with who accepted it
+   - **One round per run.** If the user's reply raises new questions, write
+     the PRD on the answers and defaults you have and list the new ones
+     as assumptions. Do not open a second round in the same run
+   - **Silence is not an answer.** If nobody replies, the questions stay
+     open and the PRD stays `draft`. Do not treat your own defaults as
+     accepted because time passed. A platform that runs this skill may
+     have a per-repo policy that proceeds on defaults after a timeout; that
+     policy decides, not this skill
+
 2. **Define the MVP and cut everything else**
 
    - State the one core user journey the MVP must serve
@@ -99,6 +133,11 @@ principles (e.g., `/product-define review docs/product/bulk-import.md`).
    ## Out of scope
    <cut items with the reason — so they stay cut>
 
+   ## Decided
+   <each answered question: Q, answer, who answered, link to the comment.
+   Defaults the user accepted are listed here too, marked "default
+   accepted". This section is what stops a later run from asking again>
+
    ## Open questions & assumptions
    <what we don't know; what we assumed and how to validate it>
    ```
@@ -132,6 +171,10 @@ principles (e.g., `/product-define review docs/product/bulk-import.md`).
   and propose the cut
 - Never invent user evidence, quotes, or metrics — missing evidence is
   reported as an assumption to validate
+- Never ask a question that is already answered in the issue thread or
+  the PRD's "Decided" section, never ask more than 5 in a round, and never
+  open a second round in the same run
+- Never mark your own default as decided unless a person accepted it
 - This skill defines and prioritizes — it does not design the architecture
   (that's `/architect-design`) or schedule the work (that's
   `/pm-sprint-delivery`)

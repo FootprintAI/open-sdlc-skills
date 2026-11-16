@@ -72,6 +72,9 @@ principles (e.g., `/product-define review docs/product/bulk-import.md`).
      PRD draft. A recorded answer is final unless the user reopens it
    - **"Go with the defaults" is a complete answer.** It accepts every
      default in the round; record each one as decided, with who accepted it
+     (an explicit answer that happens to match the default is recorded
+     as that person's answer). Answering the questions does not accept
+     the PRD: it stays `draft` until the user approves the written PRD
    - **One round per issue, not per run.** Before asking, look for an
      earlier round on the same issue: a numbered question comment, or a
      PRD draft with "Decided" or "Open questions" filled in. If one exists,

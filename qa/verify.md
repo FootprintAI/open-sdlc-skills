@@ -258,7 +258,8 @@ the author's reasoning (principle 10).
 9. **Choose the strategy for each requirement, and say why.**
    - **Black box**: drive the behaviour through its public surface (CLI,
      HTTP API, UI, or an exported library API) from the requirement
-     alone, without reading the implementation first. Use it for contract, user-journey and
+     alone, without reading the implementation first. Use it for
+     contract, user-journey and
      acceptance requirements. The test must be writable from the
      requirement's words
    - **White box**: read the code to pick the boundaries, branches and

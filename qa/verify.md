@@ -54,7 +54,8 @@ e2e suite; criteria that need it become INCONCLUSIVE), `--push-tests`
 principle 7). Refuse to verify a PR this session authored, meaning the
 session opened it or made its commits (check the session's own record,
 not just logins: agents often share one account, so a matching login
-alone is not proof). Flag it for a human instead.
+alone is not proof). Flag it for a human instead. The same goes for a
+session that carries the author's reasoning (principle 10).
 
 **Principles**
 
@@ -277,6 +278,30 @@ alone is not proof). Flag it for a human instead.
      as such with the reason. It is never PASS
    A requirement may have both. Record the strategy and a one-line reason
    for every row; a PASS needs the test that pins it
+10. **Independent of the author.** A verdict that shares the author's
+    context shares the author's blind spots, so the verifier is built to
+    know only what a stranger would. Independence is checked where it can
+    be (context, public-surface tests) and recorded where it cannot
+    (model); it is never just asserted
+    - **Fresh context.** Work from the PR, the issue and the requirement
+      document, and from nothing the author's session produced. If your
+      context holds the author's reasoning for this PR (the same
+      conversation continued, a resumed session, or an authoring
+      transcript, plan or summary handed to you), stop and report
+      INCONCLUSIVE ("verifier not independent of the author"); a human runs
+      it again in a fresh session. The PR's own text stays a claim to test
+    - **Record both sides.** The report names who authored the PR and who
+      verified it (step 7's Independence line). When the PR names the model
+      that wrote it (an attribution trailer or footer) and you know your
+      own, say whether they are the same model. The same model is allowed
+      and is said plainly, as a weaker independence; when the runtime lets
+      you choose, prefer a different model from the author's
+    - **Black box means black box.** A row marked black box is planned from
+      the requirement's words before you read the implementation, and its
+      test touches only the public surface (CLI, HTTP, UI, exported API).
+      A test that imports or calls a non-exported symbol of the code under
+      test, or that sets its expectation by reading the implementation, is
+      white box: relabel the row and say so in its Strategy cell
 
 **Verdicts**
 
@@ -556,6 +581,9 @@ the summary says "build failed".
    **Added to the env allowlist:** <variables, or none>
    **Tests added:** `foo_test.go` (criterion 1); not pushed
    **Identity:** `<head>` (and `<tests-sha>`, when pushed)
+   **Independence:** author `<login>` (model: `<from the PR, or unknown>`);
+   verifier `<session or agent id>` (model: `<yours>`); fresh context: yes;
+   same model as the author: yes, no or unknown
 
    | # | Criterion | Verdict | Evidence |
    |---|-----------|---------|----------|
@@ -652,7 +680,10 @@ the summary says "build failed".
   dependency manifests or `.git/`
 - Never put real customer data, credentials, or tokens in a test, a
   fixture, a screenshot, or the report
-- Never verify a PR you authored in this session
+- Never verify a PR you authored in this session, or with the author's
+  reasoning for it in your context (principle 10)
+- Never label a test black box when it touches a non-public symbol or took
+  its expectation from the implementation
 - Never report an overall PASS while any criterion or requirement is FAIL
   or INCONCLUSIVE — say which, plainly, rather than rounding up
 - Never mark a requirement PASS without the test that pins it, never

@@ -389,15 +389,31 @@ the summary says "build failed".
 4. **Map each criterion to a test that pins it**
 
    For each criterion, find the test (name and file) that exercises it and
-   run it by name. Where cheap, also confirm the test fails when the
-   behavior is absent: in a throwaway tree, break the one behavior
-   the test checks (or revert its one assertion, when it has a single
-   one), see red, and discard the tree. This is
-   the only place QA may edit the code under test or an existing
-   assertion, it is never committed or pushed, and it is optional: say
-   "not mutation-checked" for a row you skipped. A mutation that changed
-   nothing proves nothing: check `git diff` is non-empty before reading
-   the result. A criterion with no pinning test gets one written in step 5.
+   run it by name. Then show the test can fail. This soundness check is
+   **required** for any PASS that rests on a test the PR added or changed,
+   on a helper or fixture the PR changed, or on a test you wrote in step 5:
+   those are the tests a vacuous or forged PASS would come from. It is
+   optional for a PASS that rests on a test already on the base, unchanged,
+   with its helpers; say "not mutation-checked" for such a row you skipped.
+
+   Show it one of two ways:
+
+   - **Fails on the base.** When the criterion describes behavior this PR
+     adds, run the same test against the base in a second sandboxed tree:
+     it must fail there and pass on `<head>`. A test that also passes on
+     the base shows nothing for new behavior; use the mutation instead
+   - **Mutation.** In a throwaway tree, break the one behavior the test
+     checks (or revert its one assertion, when it has a single one), see
+     red, and discard the tree
+
+   This is the only place QA may edit the code under test or an existing
+   assertion; it is never committed or pushed. A mutation that changed
+   nothing proves nothing: check `git diff` is non-empty before reading the
+   result. If a required check cannot be done (no single behavior to break,
+   the base will not build, the criterion describes behavior the base
+   already has so neither way applies), the row is INCONCLUSIVE ("test not
+   shown able to fail"), never PASS. A criterion with no pinning test gets
+   one written in step 5.
 
    For each requirement, record the strategy of principle 9 now, before
    writing anything: a black-box row is planned from the requirement's
@@ -569,6 +585,8 @@ the summary says "build failed".
 **Guardrails**
 
 - Never report PASS for a criterion without a run on `<head>` that shows it
+- Never report PASS on a PR-authored or QA-authored test you did not show
+  can fail (step 4); that row is INCONCLUSIVE
 - Never edit the code under test, change or delete an existing line of a
   test, fixture or helper, loosen an assertion, skip a test, or re-run a
   red result hoping it turns green — except the throwaway mutation check

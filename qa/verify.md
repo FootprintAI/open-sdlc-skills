@@ -95,8 +95,8 @@ alone is not proof). Flag it for a human instead.
    (INCONCLUSIVE, timed out after N minutes), not a reason to wait.
    Bound the whole run too: use the budget the run's instructions give,
    or else 60 minutes. Order the work cheapest first (baseline, then
-   criteria that already have a pinning test, then the soundness check
-   of each PASS that needs one, then new tests, then e2e). When the budget
+   criteria that already have a pinning test, then new tests, then the
+   soundness check of each PASS that needs one, then e2e). When the budget
    runs out, stop starting work, mark every row not yet run, and every
    PASS whose required soundness check did not run, INCONCLUSIVE ("budget
    exhausted before this row ran" or "... before its soundness check
@@ -397,17 +397,24 @@ the summary says "build failed".
 
    *When it is required.* For any PASS that rests on a test the PR added
    or changed; on a helper, fixture, `TestMain`, conftest or other package
-   setup the PR added or changed in the test's package or directory; or on
+   setup the PR added or changed that the test loads (in its package, its
+   directory or a parent); or on
    a test or script you wrote in step 5 (the QA script of a data-artifact
    row counts). Those are where a vacuous or forged PASS comes from. For a
    PASS on a test already on the base whose setup the PR left alone, it is
    optional: say "not soundness-checked" for such a row you skipped.
 
    *The base tree.* Make a second sandboxed tree at the merge base
-   (`git merge-base <base> <head>`) and record that SHA in the row's
-   evidence. To run a test the PR added there, copy over only that test
-   file and the PR-added setup it needs, never the code under test; that
-   adds new files and changes no existing line, so principle 4 holds.
+   (`git merge-base origin/<base> <head>`) and record that SHA in the row's
+   evidence. If the merge base cannot be had (a shallow or handed-over
+   checkout), use the mutation. To run a test the PR **added** there, copy
+   over only that test file and the PR-added setup it needs, taken with
+   `git show <head>:<path>` and never from the head sandbox tree, and never
+   the code under test; that adds new files and changes no existing line, so
+   principle 4 holds. Never copy a path the gate matches (a conftest, a
+   build or CI file) unless `--trust-pr` is in force, since the head
+   runs without it under the gate downgrade; use the mutation instead. A
+   test or setup file the PR **changed** is not overlaid: use the mutation.
    Commands come from the base, as in step 2, including under `--trust-pr`.
 
    *Two ways to show it.*
@@ -427,12 +434,15 @@ the summary says "build failed".
    comes and goes is flaky (step 3) and shows nothing. A mutation that
    changed nothing proves nothing: check the tree really differs (`git
    diff`, or a checksum of the file before and after when the tree has no
-   `.git`). A test that stays green with the behavior broken does not pin
-   its criterion: the row is INCONCLUSIVE ("test passes with the behavior
-   broken"). When the criterion is behavior the base already has, the base
-   run shows nothing and the mutation is the check. When neither way can
-   be done (no single behavior to break, or the base will not build), the
-   row is INCONCLUSIVE ("test not shown able to fail"). It is never PASS.
+   `.git`), and record what was broken in the row's evidence. A test that
+   stays green with the behavior broken does not pin its criterion: the row
+   is INCONCLUSIVE ("test passes with the behavior broken"). A test for
+   behavior the PR adds that is green on the base shows nothing there, and
+   so does a test for behavior the base already has: the mutation is the
+   check. When the mutation cannot be done either (no single behavior to
+   break), the row is INCONCLUSIVE ("test not shown able to fail"). A base
+   that will not build or a merge base you cannot get is not a reason to
+   stop: use the mutation. It is never PASS.
 
    This is the only place QA may edit the code under test or an existing
    assertion; it is never committed or pushed. A criterion with no pinning
@@ -566,8 +576,8 @@ the summary says "build failed".
 
    ## Evidence
    <command, exit code, duration, output tail per run; for each soundness
-   check, the base SHA, whether it was a base run or a mutation, and the
-   red it produced>
+   check, the base SHA, whether it was a base run or a mutation (and what was
+   broken), and the red it produced>
 
    ## Tests added
    <a patch of the new passing tests, and the body and output of any
@@ -612,9 +622,9 @@ the summary says "build failed".
 **Guardrails**
 
 - Never report PASS for a criterion without a run on `<head>` that shows it
-- Never report PASS on a test the PR or you wrote, or whose package setup
-  the PR changed, without showing it can fail (step 4); that row is
-  INCONCLUSIVE
+- Never report PASS on a test the PR added or changed, or you wrote, or
+  whose package setup the PR added or changed, without showing it can fail
+  (step 4); that row is INCONCLUSIVE
 - Never edit the code under test, change or delete an existing line of a
   test, fixture or helper, loosen an assertion, skip a test, or re-run a
   red result hoping it turns green — except the throwaway soundness check

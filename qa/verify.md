@@ -258,8 +258,7 @@ the author's reasoning (principle 10).
 9. **Choose the strategy for each requirement, and say why.**
    - **Black box**: drive the behaviour through its public surface (CLI,
      HTTP API, UI, or an exported library API) from the requirement
-     alone, without reading the
-     implementation first. Use it for contract, user-journey and
+     alone, without reading the implementation first. Use it for contract, user-journey and
      acceptance requirements. The test must be writable from the
      requirement's words
    - **White box**: read the code to pick the boundaries, branches and
@@ -294,8 +293,8 @@ the author's reasoning (principle 10).
       an authoring transcript, plan, notes or summary handed to you outside
       the PR and the issue. If your context holds that, stop at the top of
       step 1, before the gate, and report INCONCLUSIVE ("verifier not
-      independent of the author"); a human runs it again in a fresh
-      session. You can notice a continued conversation or a handed-over
+      independent of the author"); whoever launched it runs it again in a
+      fresh session. You can notice a continued conversation or a handed-over
       transcript; you cannot rule out a summary you do not recognise, so the
       report says "fresh context: yes (self-assessed)"
     - **Record both sides.** The report names who authored the PR and who
@@ -308,17 +307,22 @@ the author's reasoning (principle 10).
       model is allowed and said plainly, as a weaker independence. If you
       are launching or choosing the verifier, pick a different model from
       the author's where you can
-    - **Black box means black box.** A black-box row's expected result is
-      written down at the end of step 1, from the requirement's words,
-      before any of the code is read: the exact public-surface check (the
-      command, request or UI path) and what it must show. Finding out how to
-      reach the surface (a route, a flag, a UI selector) is not setting the
-      expectation. The test touches only the public surface of principle 9.
-      A test that imports or calls a non-exported symbol of the code under
-      test, or whose expected result came from reading the implementation,
-      is white box: relabel the row and say so in its Strategy cell. The
-      soundness check of step 4 reads the implementation after the test is
-      written and does not change the label
+    - **Black box means black box.** At the end of step 1 every row gets
+      a provisional strategy (principle 9), and each row you call black box
+      gets its expected result written down then, from the criterion's or
+      requirement's words alone: not from the PR body, commit messages or
+      file list, which describe the implementation and are only claims. Write
+      the check as far as the words allow (what to run or call, through a
+      CLI, HTTP API, UI or exported library API, and what it must show).
+      Finding out how to reach the surface (the exact route, flag or UI
+      selector) can come later; the expected result stays fixed. A row that
+      first appears after a restart (principle 3) cannot be written blind:
+      label it white box, or "planned after reading". Step 4 confirms or
+      relabels each strategy. A test that imports or calls a non-exported
+      symbol of the code under test, or whose expected result came from
+      reading the implementation, is white box: relabel the row and say so
+      in its Strategy cell. The soundness check of step 4 reads the
+      implementation after the test is written and does not change the label
 
 **Verdicts**
 
@@ -338,9 +342,11 @@ the summary says "build failed".
 
 1. **Read the contract**
 
-   First the checks that stop a run before it reads anything: the
-   self-authored rule of the Input section and the fresh-context rule of
-   principle 10.
+   First the checks that need no fetch: the fresh-context rule of
+   principle 10, and the self-authored rule of the Input section against
+   your own session's record. After the fetch below, confirm the
+   self-authored rule against `author` and the commits, and stop if it
+   fires.
 
    ```bash
    gh pr view <pr> --json number,createdAt,headRefOid,headRefName,baseRefName,body,files,isCrossRepository,maintainerCanModify,author,closingIssuesReferences,commits
@@ -391,9 +397,11 @@ the summary says "build failed".
    verdict is INCONCLUSIVE ("no acceptance criteria to verify against").
    Never invent criteria from the diff.
 
-   Before leaving this step, write down the expected result of every
-   black-box row (principle 10), from the criterion's or requirement's
-   words, before step 2 puts any of the code in front of you.
+   Before leaving this step, give every row a provisional strategy of
+   principle 9 and write down the expected result of each black-box row
+   (principle 10), from the criterion's or requirement's words alone and
+   not from the PR body, commit messages or file list, before step 2 puts
+   any of the code in front of you. Step 4 confirms or relabels it.
 
 2. **Apply the gate, then check out the head**
 
@@ -498,10 +506,11 @@ the summary says "build failed".
    assertion; it is never committed or pushed. A criterion with no pinning
    test gets one written in step 5, and that test needs this check too.
 
-   For each requirement, record the strategy of principle 9 now, before
-   writing anything: a black-box row is planned from the requirement's
-   words and is written without reading the implementation; a white-box
-   row is planned after reading the code at the boundary it names.
+   For each requirement, confirm or relabel the strategy of principle 9
+   given in step 1, now, before writing anything: a black-box row keeps
+   the expected result fixed in step 1 and is written without reading the
+   implementation; a white-box row is planned after reading the code at
+   the boundary it names.
 
 5. **Write the missing tests, test-only**
 
@@ -608,8 +617,12 @@ the summary says "build failed".
    **Identity:** `<head>` (and `<tests-sha>`, when pushed)
    **Independence:** author `<login>`, claimed model(s) `<list, or none
    claimed>`; verifier `<session or agent id, or unavailable>`, model
-   `<yours, or unknown>`; fresh context: `<yes (self-assessed) | no>`; same
-   model as the claimed author: `<yes | no | unknown, with the reason>`
+   `<yours, or unknown>`; fresh context: yes (self-assessed; a run that
+   is not fresh stops before this report, principle 10); same model as the
+   claimed author: `<yes | no | unknown, with the reason; say it for each
+   model when several are claimed>`. When the author and verifier logins
+   match (a shared account), say so: the login alone does not tell them
+   apart
 
    | # | Criterion | Verdict | Evidence |
    |---|-----------|---------|----------|

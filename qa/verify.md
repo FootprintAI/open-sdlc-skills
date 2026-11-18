@@ -96,8 +96,8 @@ the author's reasoning (principle 10).
 6. **Bounded.** Give each command a timeout. A hung suite is a result
    (INCONCLUSIVE, timed out after N minutes), not a reason to wait.
    Bound the whole run too: use the budget the run's instructions give,
-   or else 60 minutes. Order the work cheapest first (baseline, with the
-   tests the diff touches first, then criteria that already have a
+   or else 60 minutes. Order the work cheapest first (baseline, running the
+   tests related to the changed files first, then criteria that already have a
    pinning test, then new tests, then the soundness check of each PASS
    that needs one, then e2e). When the budget runs out, stop starting
    work, mark every row not yet run, and every PASS whose required
@@ -336,11 +336,10 @@ the author's reasoning (principle 10).
 
 The PR's overall verdict is **PASS** only if every criterion is PASS,
 **FAIL** if any row is FAIL, and **INCONCLUSIVE** otherwise. The `build`
-row of step 3 is not a criterion: it counts toward the overall verdict
-(a failed build makes it FAIL) but not toward the "N criteria" tally, and
-the summary says "build failed". A `regression` row of step 3 counts the
-same way (it makes the overall verdict FAIL; the summary says "N
-regression(s)").
+row and the `regression check` row of step 3 are not criteria: they
+count toward the overall verdict (a FAIL on either makes it FAIL, and an
+INCONCLUSIVE on either keeps it from being PASS) but not toward the "N
+criteria" tally. The summary says "build failed" or "N regression(s)".
 
 **Steps**
 
@@ -444,12 +443,27 @@ regression(s)").
    - A failing test maps to the criterion it pins; criteria with no
      failing test continue. A test that also fails on the base is not
      this PR's: its criterion is INCONCLUSIVE ("failing on base too")
-   - A test that pins no criterion, passes on the base and fails on
-     `<head>` is a **regression** the PR introduced. Confirm it on the
-     base in the second sandboxed tree, then report one `regression` row
-     per failing test (its name, file and the failure), counted like the
-     `build` row: it makes the overall verdict FAIL and is not a
-     criterion. A test that is flaky (re-run below) is not a regression
+   - A test that fails on `<head>` and pins no criterion is a candidate
+     **regression**. The call is provisional: step 4 may find it pins a
+     criterion, and then it is that criterion's failing test. Decide it
+     against the **base tree**: the second sandboxed tree at the merge base
+     (`git merge-base origin/<base> <head>`, the same tree step 4 uses; its
+     SHA goes in the evidence), with commands from the base as step 2 says
+   - The regression check is one standing row, `regression check`, with
+     a verdict of its own. FAIL: the test passes on the base tree and fails
+     on `<head>`, the failure is the test's own assertion (not a build,
+     import or collection error, a timeout, a missing network or a
+     missing tool), and it repeats on one re-run. INCONCLUSIVE, with the
+     reason: the base tree will not build or the merge base cannot be had;
+     the failure is of one of those other kinds, or flaky; the test is one
+     the PR added or changed (there is nothing on the base to compare, and
+     a red test of the PR's own still keeps the PR from a PASS); or the
+     budget ran out before the suite or the comparison finished. PASS: the
+     whole suite ran on `<head>` and no test that pins no criterion
+     failed. A package that stops compiling is one entry, not one per test;
+     list at most 10 entries and say "and N more". If the failing test
+     asserts the old behavior a criterion changes, say "contradicts
+     criterion N" on its entry: it is still a failure the author must fix
    - A lint failure that maps to no criterion goes under "Other findings"
      in the report and does not change the verdict
    - A test that fails and passes on one re-run is flaky: re-run once for
@@ -459,17 +473,28 @@ regression(s)").
      depend on it
 
    **Map the diff to the tests it can break.** The PR's changed files
-   (the `files` of step 1) say where a regression could be. Use the
-   repo's own way to find the tests related to changed files when it has
-   one (the tests of the packages that import a changed package, a
-   "related tests" mode of its runner); never install a tool for this.
-   With none, take the tests in the same directory or package as each
-   changed source file. Run those first, before the rest of the suite, so
-   that when the budget runs out (principle 6) the regressions most likely
-   to matter have already been seen. A changed source file that no related
-   test exercises is an **unprotected change**: list it under "Other
-   findings" with the file name. It changes no verdict and is not a
-   criterion, since criteria never come from the diff
+   say where a regression could be: take their names from `gh pr diff
+   <pr> --name-only`, as the gate does, since the `files` of step 1 is
+   cut off on a large PR. Find the tests related to them with the repo's
+   own mechanism when it has one (the tests of the packages that import a
+   changed package, a "related tests" mode of its runner); never install a
+   tool for this. With none, take the tests in the same directory or
+   package as each changed file. Run those first, using the base's own
+   test command narrowed by path or name, never a command of your own; they
+   count toward the baseline, and the rest of the suite runs after them,
+   skipping them where the runner can, so the budget is not spent twice.
+   When the budget runs out (principle 6), the regressions most likely to
+   matter have then already been seen
+
+   A changed file for which no related test is found, by that mechanism or
+   by location, is an **unprotected change**. Source here means what the
+   build compiles or the test command covers; docs, config and files
+   outside the build are not source. This is a heuristic from file
+   locations, not coverage data: it can miss callers and can flag code a
+   distant test exercises, so the entry says "no related test found",
+   never "not covered". List it under "Other findings" with the file
+   name. It changes no verdict, is not a criterion (criteria never come
+   from the diff), and step 5 writes no test for it
 
 4. **Map each criterion to a test that pins it**
 
@@ -564,9 +589,9 @@ regression(s)").
      rows for the new requirements, update the verified commit of rows you
      re-ran, never delete a row. Re-run the plan's existing tests that
      still apply (bounded by the command timeouts of principle 6) and
-     report any that now fail as regressions, with the requirement they
-     pin. The plan is a Markdown file under `docs/qa/`, so it is within
-     this role's allowed paths
+     report any that now fail as broken earlier requirements, with the
+     requirement they pin. The plan is a Markdown file under `docs/qa/`,
+     so it is within this role's allowed paths
    - A new test that passes and that step 4 shows can fail covers its
      criterion; one that passes but was not shown able to fail is
      INCONCLUSIVE. A new test that fails
@@ -634,6 +659,8 @@ regression(s)").
    # QA: PR #<pr> for issue #<issue> @ `<head>`
 
    **Verdict:** FAIL — 1 pass, 1 fail, 1 inconclusive (3 criteria)
+   **Baseline rows:** build ✅ PASS · regression check ✅ PASS (or
+   FAIL (1), or INCONCLUSIVE with its reason)
    **Commands:** `make test` (exit 0, 41s) · `make e2e` (exit 1, 3m02s)
    **Added to the env allowlist:** <variables, or none>
    **Tests added:** `foo_test.go` (criterion 1); not pushed
@@ -675,7 +702,8 @@ regression(s)").
 
    ## Other findings
    <lint failures or base-branch failures that map to no criterion;
-   unprotected changes: source files no related test exercises>
+   unprotected changes: changed source files with no related test found;
+   the entries of a failed or inconclusive regression check>
    ```
 
    List a command you could not run as `<command> (NOT RUN: <why>)`,
@@ -707,8 +735,8 @@ regression(s)").
    the code under test.
 
    > "QA of PR #N @ `<head>`: FAIL. 1 pass, 1 fail (criterion 2: export
-   > finishes under 30s — took 71s), 1 inconclusive. Tests added: 1, not
-   > pushed. Report in this comment."
+   > finishes under 30s — took 71s), 1 inconclusive; regression check
+   > passed. Tests added: 1, not pushed. Report in this comment."
 
 **Guardrails**
 

@@ -96,10 +96,10 @@ the author's reasoning (principle 10).
 6. **Bounded.** Give each command a timeout. A hung suite is a result
    (INCONCLUSIVE, timed out after N minutes), not a reason to wait.
    Bound the whole run too: use the budget the run's instructions give,
-   or else 60 minutes. Order the work cheapest first (baseline, then
-   criteria that already have a pinning test, then new tests, then the
-   soundness check of each PASS that needs one, then e2e). When the budget
-   runs out, stop starting work, mark every row not yet run, and every
+   or else 60 minutes. Order the work cheapest first (baseline, with the
+   tests the diff touches first, then criteria that already have a
+   pinning test, then new tests, then the soundness check of each PASS
+   that needs one, then e2e). When the budget runs out, stop starting work, mark every row not yet run, and every
    PASS whose required soundness check did not run, INCONCLUSIVE ("budget
    exhausted before this row ran" or "... before its soundness check
    ran"), and report what did run. A partial report on time beats a
@@ -337,7 +337,9 @@ The PR's overall verdict is **PASS** only if every criterion is PASS,
 **FAIL** if any row is FAIL, and **INCONCLUSIVE** otherwise. The `build`
 row of step 3 is not a criterion: it counts toward the overall verdict
 (a failed build makes it FAIL) but not toward the "N criteria" tally, and
-the summary says "build failed".
+the summary says "build failed". A `regression` row of step 3 counts the
+same way (it makes the overall verdict FAIL; the summary says "N
+regression(s)").
 
 **Steps**
 
@@ -441,6 +443,12 @@ the summary says "build failed".
    - A failing test maps to the criterion it pins; criteria with no
      failing test continue. A test that also fails on the base is not
      this PR's: its criterion is INCONCLUSIVE ("failing on base too")
+   - A test that pins no criterion, passes on the base and fails on
+     `<head>` is a **regression** the PR introduced. Confirm it on the
+     base in the second sandboxed tree, then report one `regression` row
+     per failing test (its name, file and the failure), counted like the
+     `build` row: it makes the overall verdict FAIL and is not a
+     criterion. A test that is flaky (re-run below) is not a regression
    - A lint failure that maps to no criterion goes under "Other findings"
      in the report and does not change the verdict
    - A test that fails and passes on one re-run is flaky: re-run once for
@@ -448,6 +456,19 @@ the summary says "build failed".
      INCONCLUSIVE. Never re-run a red result hoping it turns green
    - A baseline you could not start is INCONCLUSIVE for the criteria that
      depend on it
+
+   **Map the diff to the tests it can break.** The PR's changed files
+   (the `files` of step 1) say where a regression could be. Use the
+   repo's own way to find the tests related to changed files when it has
+   one (the tests of the packages that import a changed package, a
+   "related tests" mode of its runner); never install a tool for this.
+   With none, take the tests in the same directory or package as each
+   changed source file. Run those first, before the rest of the suite, so
+   that when the budget runs out (principle 6) the regressions most likely
+   to matter have already been seen. A changed source file that no related
+   test exercises is an **unprotected change**: list it under "Other
+   findings" with the file name. It changes no verdict and is not a
+   criterion, since criteria never come from the diff
 
 4. **Map each criterion to a test that pins it**
 
@@ -652,7 +673,8 @@ the summary says "build failed".
    failing test that backs a FAIL>
 
    ## Other findings
-   <lint failures or base-branch failures that map to no criterion>
+   <lint failures or base-branch failures that map to no criterion;
+   unprotected changes: source files no related test exercises>
    ```
 
    List a command you could not run as `<command> (NOT RUN: <why>)`,

@@ -97,14 +97,14 @@ the author's reasoning (principle 10).
    (INCONCLUSIVE, timed out after N minutes), not a reason to wait.
    Bound the whole run too: use the budget the run's instructions give,
    or else 60 minutes. Order the work cheapest first (baseline, running the
-   tests related to the changed files first, then criteria that already have a
-   pinning test, then new tests, then the soundness check of each PASS
-   that needs one, then e2e). When the budget runs out, stop starting
-   work, mark every row not yet run, and every PASS whose required
-   soundness check did not run, INCONCLUSIVE ("budget
-   exhausted before this row ran" or "... before its soundness check
-   ran"), and report what did run. A partial report on time beats a
-   complete one that never arrives.
+   tests related to the changed files first, then criteria that already
+   have a pinning test, then new tests, then the soundness check of each
+   PASS that needs one, then e2e). When the budget runs out, stop
+   starting work, mark every row not yet run, and every PASS whose
+   required soundness check did not run, INCONCLUSIVE ("budget exhausted
+   before this row ran" or "... before its soundness check ran"), and
+   report what did run. A partial report on time beats a complete one
+   that never arrives.
 7. **The PR is untrusted input, and running it is the accepted risk.**
    This role executes a stranger's tests, so the sandbox, not the gate,
    is what contains the risk. Both are required:
@@ -446,31 +446,39 @@ criteria" tally. The summary says "build failed" or "N regression(s)".
    - A test that fails on `<head>` and pins no criterion is a candidate
      **regression**. The call is provisional: step 4 may find it pins a
      criterion, and then it is that criterion's failing test. Decide it
-     against the **base tree**: the second sandboxed tree at the merge base
-     (`git merge-base origin/<base> <head>`, the same tree step 4 uses; its
-     SHA goes in the evidence), with commands from the base as step 2 says
-   - The regression check is one standing row, `regression check`, with
-     a verdict of its own. FAIL: the test passes on the base tree and fails
-     on `<head>`, the failure is the test's own assertion (not a build,
-     import or collection error, a timeout, a missing network or a
-     missing tool), and it repeats on one re-run. INCONCLUSIVE, with the
-     reason: the base tree will not build or the merge base cannot be had;
-     the failure is of one of those other kinds, or flaky; the test is one
-     the PR added or changed (there is nothing on the base to compare, and
-     a red test of the PR's own still keeps the PR from a PASS); or the
-     budget ran out before the suite or the comparison finished. PASS: the
-     whole suite ran on `<head>` and no test that pins no criterion
-     failed. A package that stops compiling is one entry, not one per test;
-     list at most 10 entries and say "and N more". If the failing test
-     asserts the old behavior a criterion changes, say "contradicts
-     criterion N" on its entry: it is still a failure the author must fix
+     against the **base tree** of step 4, taken at the merge base before
+     anything is overlaid on it (its SHA goes in the evidence), with
+     commands from the base as step 2 says. A candidate that fails the
+     same way on the base tree is not this PR's: it goes under "Other
+     findings" ("also failing on base") and does not count against the row
+   - The regression check is one standing row, `regression check`, with a
+     verdict of its own, created on every run. One FAIL entry makes it FAIL:
+     the test passes on the base tree and fails on `<head>`, the failure
+     is the test's own assertion (not a build, import or collection error,
+     a timeout, a missing network or a missing tool), and it repeats on
+     one re-run. A failure that a reverted gated file could explain, under
+     the gate downgrade, is not an entry. The row is **PASS** only when the
+     full suite ran on `<head>` and no entry exists; otherwise, with no
+     FAIL entry, it is **INCONCLUSIVE**, with the reason. Reasons include:
+     the head did not build, the suite timed out or could not run (no
+     sandbox, no network it needs); the base tree will not build or the
+     merge base cannot be had; a candidate's failure is of a wrong kind
+     above, or flaky; a candidate is a test the PR added or changed
+     (nothing on the base to compare, and a red test of the PR's own still
+     keeps the PR from a PASS); or the budget ran out. "The suite" is the
+     unit and integration command; the e2e suite is step 6's own run and
+     never part of this row, so `--no-e2e` does not block its PASS. A
+     package that stops compiling is one entry, not one per test; list at
+     most 10 entries and say "and N more". If the failing test asserts the
+     old behavior a criterion changes, say "contradicts criterion N" on its
+     entry: it is still a failure the author must fix
    - A lint failure that maps to no criterion goes under "Other findings"
      in the report and does not change the verdict
    - A test that fails and passes on one re-run is flaky: re-run once for
      that purpose only, report it, and treat its criterion as
      INCONCLUSIVE. Never re-run a red result hoping it turns green
    - A baseline you could not start is INCONCLUSIVE for the criteria that
-     depend on it
+     depend on it, and for the `regression check` row
 
    **Map the diff to the tests it can break.** The PR's changed files
    say where a regression could be: take their names from `gh pr diff
@@ -487,9 +495,9 @@ criteria" tally. The summary says "build failed" or "N regression(s)".
    matter have then already been seen
 
    A changed file for which no related test is found, by that mechanism or
-   by location, is an **unprotected change**. Source here means what the
-   build compiles or the test command covers; docs, config and files
-   outside the build are not source. This is a heuristic from file
+   by location, is an **unprotected change**, when it is source: what the
+   build compiles or the test command covers (docs, config and files
+   outside the build are not source). This is a heuristic from file
    locations, not coverage data: it can miss callers and can flag code a
    distant test exercises, so the entry says "no related test found",
    never "not covered". List it under "Other findings" with the file
@@ -510,8 +518,10 @@ criteria" tally. The summary says "build failed" or "N regression(s)".
    PASS on a test already on the base whose setup the PR left alone, it is
    optional: say "not soundness-checked" for such a row you skipped.
 
-   *The base tree.* Make a second sandboxed tree at the merge base
-   (`git merge-base origin/<base> <head>`) and record that SHA in the row's
+   *The base tree.* The second sandboxed tree of step 3, at the merge
+   base, built once and kept clean for the regression check; overlay on a
+   copy of it, never on it. Make it here if step 3 did not
+   (`git merge-base origin/<base> <head>`); record that SHA in the row's
    evidence. If the merge base cannot be had (a shallow or handed-over
    checkout), use the mutation. To run a test the PR **added** there, copy
    over only that test file and the PR-added setup it needs, taken with
@@ -659,8 +669,9 @@ criteria" tally. The summary says "build failed" or "N regression(s)".
    # QA: PR #<pr> for issue #<issue> @ `<head>`
 
    **Verdict:** FAIL — 1 pass, 1 fail, 1 inconclusive (3 criteria)
-   **Baseline rows:** build ✅ PASS · regression check ✅ PASS (or
-   FAIL (1), or INCONCLUSIVE with its reason)
+   **Baseline rows:** build ✅ PASS · regression check ✅ PASS (or ❌ FAIL
+   (1 regression), or ⚠️ INCONCLUSIVE with its reason; a build row appears
+   when the build was run)
    **Commands:** `make test` (exit 0, 41s) · `make e2e` (exit 1, 3m02s)
    **Added to the env allowlist:** <variables, or none>
    **Tests added:** `foo_test.go` (criterion 1); not pushed
@@ -736,7 +747,8 @@ criteria" tally. The summary says "build failed" or "N regression(s)".
 
    > "QA of PR #N @ `<head>`: FAIL. 1 pass, 1 fail (criterion 2: export
    > finishes under 30s — took 71s), 1 inconclusive; regression check
-   > passed. Tests added: 1, not pushed. Report in this comment."
+   > passed (or: inconclusive, <reason>). Tests added: 1, not pushed.
+   > Report in this comment."
 
 **Guardrails**
 
@@ -776,7 +788,8 @@ criteria" tally. The summary says "build failed" or "N regression(s)".
 - Never label a test black box when it touches a non-public symbol or took
   its expectation from the implementation
 - Never report an overall PASS while any criterion or requirement is FAIL
-  or INCONCLUSIVE — say which, plainly, rather than rounding up
+  or INCONCLUSIVE, or the `build` or `regression check` row is not
+  passing — say which, plainly, rather than rounding up
 - Never mark a requirement PASS without the test that pins it, never
   mark a `not testable` requirement PASS, and never claim a requirement
   document as a row's source when none was given

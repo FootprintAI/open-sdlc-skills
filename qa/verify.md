@@ -99,8 +99,9 @@ the author's reasoning (principle 10).
    or else 60 minutes. Order the work cheapest first (baseline, with the
    tests the diff touches first, then criteria that already have a
    pinning test, then new tests, then the soundness check of each PASS
-   that needs one, then e2e). When the budget runs out, stop starting work, mark every row not yet run, and every
-   PASS whose required soundness check did not run, INCONCLUSIVE ("budget
+   that needs one, then e2e). When the budget runs out, stop starting
+   work, mark every row not yet run, and every PASS whose required
+   soundness check did not run, INCONCLUSIVE ("budget
    exhausted before this row ran" or "... before its soundness check
    ran"), and report what did run. A partial report on time beats a
    complete one that never arrives.

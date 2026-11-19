@@ -157,7 +157,14 @@ the author's reasoning (principle 10).
      missing dependency, an unknown target) is INCONCLUSIVE, not FAIL;
      FAIL needs a failure the PR's own code or tests cause. The sandbox
      rules apply unchanged, and the overall verdict can still be PASS
-     only if every criterion is PASS
+     only if every criterion is PASS. A **greenfield** PR, one that adds
+     the build or test configuration the repo did not have, is the
+     limit of this downgrade: its added gated files are deleted and the
+     base defines no commands to run, so a criterion that needs them is
+     INCONCLUSIVE ("needs a gated file"). A criterion that needs no such
+     file (a data-artifact row, a language default the base's own
+     command covers) is still checked. Only a person passing
+     `--trust-pr` lets the rest run
    - **Commands from the base.** The base must be trustworthy: a
      same-repo author can create any branch, put a hostile Makefile on it
      and target it. Accept `baseRefName` only if it is the repo's default

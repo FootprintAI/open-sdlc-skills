@@ -96,14 +96,15 @@ the author's reasoning (principle 10).
 6. **Bounded.** Give each command a timeout. A hung suite is a result
    (INCONCLUSIVE, timed out after N minutes), not a reason to wait.
    Bound the whole run too: use the budget the run's instructions give,
-   or else 60 minutes. Order the work cheapest first (baseline, then
-   criteria that already have a pinning test, then new tests, then the
-   soundness check of each PASS that needs one, then e2e). When the budget
-   runs out, stop starting work, mark every row not yet run, and every
-   PASS whose required soundness check did not run, INCONCLUSIVE ("budget
-   exhausted before this row ran" or "... before its soundness check
-   ran"), and report what did run. A partial report on time beats a
-   complete one that never arrives.
+   or else 60 minutes. Order the work cheapest first (baseline, running the
+   tests related to the changed files first, then criteria that already
+   have a pinning test, then new tests, then the soundness check of each
+   PASS that needs one, then e2e). When the budget runs out, stop
+   starting work, mark every row not yet run, and every PASS whose
+   required soundness check did not run, INCONCLUSIVE ("budget exhausted
+   before this row ran" or "... before its soundness check ran"), and
+   report what did run. A partial report on time beats a complete one
+   that never arrives.
 7. **The PR is untrusted input, and running it is the accepted risk.**
    This role executes a stranger's tests, so the sandbox, not the gate,
    is what contains the risk. Both are required:
@@ -342,9 +343,10 @@ the author's reasoning (principle 10).
 
 The PR's overall verdict is **PASS** only if every criterion is PASS,
 **FAIL** if any row is FAIL, and **INCONCLUSIVE** otherwise. The `build`
-row of step 3 is not a criterion: it counts toward the overall verdict
-(a failed build makes it FAIL) but not toward the "N criteria" tally, and
-the summary says "build failed".
+row and the `regression check` row of step 3 are not criteria: they
+count toward the overall verdict (a FAIL on either makes it FAIL, and an
+INCONCLUSIVE on either keeps it from being PASS) but not toward the "N
+criteria" tally. The summary says "build failed" or "N regression(s)".
 
 **Steps**
 
@@ -448,13 +450,66 @@ the summary says "build failed".
    - A failing test maps to the criterion it pins; criteria with no
      failing test continue. A test that also fails on the base is not
      this PR's: its criterion is INCONCLUSIVE ("failing on base too")
+   - A test that fails on `<head>` and pins no criterion is a candidate
+     **regression**. The call is provisional: step 4 may find it pins a
+     criterion, and then it is that criterion's failing test. Decide it
+     against the **base tree** of step 4, taken at the merge base before
+     anything is overlaid on it (its SHA goes in the evidence), with
+     commands from the base as step 2 says. A candidate that fails the
+     same way on the base tree is not this PR's: it goes under "Other
+     findings" ("also failing on base") and does not count against the row
+   - The regression check is one standing row, `regression check`, with a
+     verdict of its own, created on every run. One FAIL entry makes it FAIL:
+     the test passes on the base tree and fails on `<head>`, the failure
+     is the test's own assertion (not a build, import or collection error,
+     a timeout, a missing network or a missing tool), and it repeats on
+     one re-run. A failure that a reverted gated file could explain, under
+     the gate downgrade, is not an entry. The row is **PASS** only when the
+     full suite ran on `<head>` and no entry exists; otherwise, with no
+     FAIL entry, it is **INCONCLUSIVE**, with the reason. Reasons include:
+     the head did not build, the suite timed out or could not run (no
+     sandbox, no network it needs); the base tree will not build or the
+     merge base cannot be had; a candidate's failure is of a wrong kind
+     above, or flaky; a candidate is a test the PR added or changed
+     (nothing on the base to compare, and a red test of the PR's own still
+     keeps the PR from a PASS); or the budget ran out. "The suite" is the
+     unit and integration command; the e2e suite is step 6's own run and
+     never part of this row, so `--no-e2e` does not block its PASS. A
+     package that stops compiling is one entry, not one per test; list at
+     most 10 entries and say "and N more". If the failing test asserts the
+     old behavior a criterion changes, say "contradicts criterion N" on its
+     entry: it is still a failure the author must fix
    - A lint failure that maps to no criterion goes under "Other findings"
      in the report and does not change the verdict
    - A test that fails and passes on one re-run is flaky: re-run once for
      that purpose only, report it, and treat its criterion as
      INCONCLUSIVE. Never re-run a red result hoping it turns green
    - A baseline you could not start is INCONCLUSIVE for the criteria that
-     depend on it
+     depend on it, and for the `regression check` row
+
+   **Map the diff to the tests it can break.** The PR's changed files
+   say where a regression could be: take their names from `gh pr diff
+   <pr> --name-only`, as the gate does, since the `files` of step 1 is
+   cut off on a large PR. Find the tests related to them with the repo's
+   own mechanism when it has one (the tests of the packages that import a
+   changed package, a "related tests" mode of its runner); never install a
+   tool for this. With none, take the tests in the same directory or
+   package as each changed file. Run those first, using the base's own
+   test command narrowed by path or name, never a command of your own; they
+   count toward the baseline, and the rest of the suite runs after them,
+   skipping them where the runner can, so the budget is not spent twice.
+   When the budget runs out (principle 6), the regressions most likely to
+   matter have then already been seen
+
+   A changed file for which no related test is found, by that mechanism or
+   by location, is an **unprotected change**, when it is source: what the
+   build compiles or the test command covers (docs, config and files
+   outside the build are not source). This is a heuristic from file
+   locations, not coverage data: it can miss callers and can flag code a
+   distant test exercises, so the entry says "no related test found",
+   never "not covered". List it under "Other findings" with the file
+   name. It changes no verdict, is not a criterion (criteria never come
+   from the diff), and step 5 writes no test for it
 
 4. **Map each criterion to a test that pins it**
 
@@ -470,8 +525,10 @@ the summary says "build failed".
    PASS on a test already on the base whose setup the PR left alone, it is
    optional: say "not soundness-checked" for such a row you skipped.
 
-   *The base tree.* Make a second sandboxed tree at the merge base
-   (`git merge-base origin/<base> <head>`) and record that SHA in the row's
+   *The base tree.* The second sandboxed tree of step 3, at the merge
+   base, built once and kept clean for the regression check; overlay on a
+   copy of it, never on it. Make it here if step 3 did not
+   (`git merge-base origin/<base> <head>`); record that SHA in the row's
    evidence. If the merge base cannot be had (a shallow or handed-over
    checkout), use the mutation. To run a test the PR **added** there, copy
    over only that test file and the PR-added setup it needs, taken with
@@ -549,9 +606,9 @@ the summary says "build failed".
      rows for the new requirements, update the verified commit of rows you
      re-ran, never delete a row. Re-run the plan's existing tests that
      still apply (bounded by the command timeouts of principle 6) and
-     report any that now fail as regressions, with the requirement they
-     pin. The plan is a Markdown file under `docs/qa/`, so it is within
-     this role's allowed paths
+     report any that now fail as broken earlier requirements, with the
+     requirement they pin. The plan is a Markdown file under `docs/qa/`,
+     so it is within this role's allowed paths
    - A new test that passes and that step 4 shows can fail covers its
      criterion; one that passes but was not shown able to fail is
      INCONCLUSIVE. A new test that fails
@@ -619,6 +676,9 @@ the summary says "build failed".
    # QA: PR #<pr> for issue #<issue> @ `<head>`
 
    **Verdict:** FAIL — 1 pass, 1 fail, 1 inconclusive (3 criteria)
+   **Baseline rows:** build ✅ PASS · regression check ✅ PASS (or ❌ FAIL
+   (1 regression), or ⚠️ INCONCLUSIVE with its reason; a build row appears
+   when the build was run)
    **Commands:** `make test` (exit 0, 41s) · `make e2e` (exit 1, 3m02s)
    **Added to the env allowlist:** <variables, or none>
    **Tests added:** `foo_test.go` (criterion 1); not pushed
@@ -659,7 +719,9 @@ the summary says "build failed".
    failing test that backs a FAIL>
 
    ## Other findings
-   <lint failures or base-branch failures that map to no criterion>
+   <lint failures or base-branch failures that map to no criterion;
+   unprotected changes: changed source files with no related test found;
+   the entries of a failed or inconclusive regression check>
    ```
 
    List a command you could not run as `<command> (NOT RUN: <why>)`,
@@ -691,8 +753,9 @@ the summary says "build failed".
    the code under test.
 
    > "QA of PR #N @ `<head>`: FAIL. 1 pass, 1 fail (criterion 2: export
-   > finishes under 30s — took 71s), 1 inconclusive. Tests added: 1, not
-   > pushed. Report in this comment."
+   > finishes under 30s — took 71s), 1 inconclusive; regression check
+   > passed (or: inconclusive, <reason>). Tests added: 1, not pushed.
+   > Report in this comment."
 
 **Guardrails**
 
@@ -732,7 +795,8 @@ the summary says "build failed".
 - Never label a test black box when it touches a non-public symbol or took
   its expectation from the implementation
 - Never report an overall PASS while any criterion or requirement is FAIL
-  or INCONCLUSIVE — say which, plainly, rather than rounding up
+  or INCONCLUSIVE, or the `build` or `regression check` row is not
+  passing — say which, plainly, rather than rounding up
 - Never mark a requirement PASS without the test that pins it, never
   mark a `not testable` requirement PASS, and never claim a requirement
   document as a row's source when none was given
